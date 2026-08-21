@@ -88,6 +88,23 @@ class ChatViewModel @Inject constructor(
             }
             ChatUiEvent.OnCallClick -> initiateCall(com.chat.shutup.domain.model.CallType.VOICE)
             ChatUiEvent.OnVideoCallClick -> initiateCall(com.chat.shutup.domain.model.CallType.VIDEO)
+            ChatUiEvent.OnAttachmentClick -> {
+                viewModelScope.launch { _uiEffect.send(ChatUiEffect.OpenImagePicker) }
+            }
+            ChatUiEvent.OnCameraClick -> {
+                viewModelScope.launch { _uiEffect.send(ChatUiEffect.OpenCamera) }
+            }
+            ChatUiEvent.OnEmojiClick -> {
+                // For a production app, you might show an emoji selector bottom sheet or keyboard.
+                // For now, we'll just append a default emoji to the input.
+                val current = _uiState.value.messageInput
+                _uiState.update { it.copy(messageInput = current + "😊") }
+            }
+            ChatUiEvent.OnVoiceMessageRecord -> {
+                viewModelScope.launch { 
+                    _uiEffect.send(ChatUiEffect.ShowError("Voice messaging coming soon!"))
+                }
+            }
             is ChatUiEvent.OnReactionClick -> {
 
                 val updatedMessages = uiState.value.messages.map { message ->

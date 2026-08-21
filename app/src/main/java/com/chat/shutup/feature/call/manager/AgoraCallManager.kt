@@ -3,6 +3,7 @@ package com.chat.shutup.feature.call.manager
 import android.content.Context
 import android.view.SurfaceView
 import android.view.ViewGroup
+import dagger.hilt.android.qualifiers.ApplicationContext
 import io.agora.rtc2.*
 import io.agora.rtc2.video.VideoCanvas
 import io.agora.rtc2.video.VideoEncoderConfiguration
@@ -12,7 +13,7 @@ import javax.inject.Singleton
 /*
 @Singleton
 class AgoraCallManager @Inject constructor(
-    private val context: Context
+    @ApplicationContext private val context: Context
 ) {
     private var rtcEngine: RtcEngine? = null
     private val appId = "0a08620a21fd4bd194c2c5da40539e29" // Should ideally come from BuildConfig or strings
@@ -65,7 +66,7 @@ class AgoraCallManager @Inject constructor(
 
 @Singleton
 class AgoraCallManager @Inject constructor(
-    private val context: Context
+    @ApplicationContext private val context: Context
 ) {
 
     private var rtcEngine: RtcEngine? = null
@@ -81,8 +82,9 @@ class AgoraCallManager @Inject constructor(
             if (rtcEngine != null) {
                 android.util.Log.d(
                     "AGORA_CALL",
-                    "Engine already initialized"
+                    "Engine already initialized, adding handler"
                 )
+                rtcEngine?.addHandler(handler)
                 return true
             }
 
@@ -96,6 +98,8 @@ class AgoraCallManager @Inject constructor(
 
             rtcEngine?.enableAudio()
             rtcEngine?.enableVideo()
+            rtcEngine?.startPreview()
+            rtcEngine?.setEnableSpeakerphone(true)
 
             android.util.Log.d(
                 "AGORA_CALL",
@@ -105,15 +109,17 @@ class AgoraCallManager @Inject constructor(
             true
 
         } catch (e: Exception) {
-
             android.util.Log.e(
                 "AGORA_CALL",
                 "Agora initialization failed",
                 e
             )
-
             false
         }
+    }
+
+    fun removeHandler(handler: IRtcEngineEventHandler) {
+        rtcEngine?.removeHandler(handler)
     }
 
     fun joinChannel(

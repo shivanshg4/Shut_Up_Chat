@@ -4,6 +4,7 @@ import com.chat.shutup.domain.model.Chat
 import com.chat.shutup.feature.chat.domain.model.Message
 import com.chat.shutup.domain.model.User
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
 
 interface ChatRepository {
     fun getChats(): Flow<List<Chat>>
@@ -17,8 +18,10 @@ interface ChatRepository {
     suspend fun getAllUsers(): Result<List<User>>
     
     // Call Signaling
+    val activeCall: StateFlow<com.chat.shutup.domain.model.CallInfo?>
     suspend fun initiateCall(targetUserId: String, type: com.chat.shutup.domain.model.CallType): Result<com.chat.shutup.domain.model.CallInfo>
     suspend fun updateCallStatus(callId: String, status: com.chat.shutup.domain.model.CallStatus): Result<Unit>
     fun observeIncomingCalls(): Flow<com.chat.shutup.domain.model.CallInfo>
     fun observeCallStatus(callId: String): Flow<com.chat.shutup.domain.model.CallStatus>
+    fun clearActiveCall()
 }

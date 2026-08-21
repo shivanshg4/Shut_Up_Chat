@@ -6,12 +6,21 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.rememberNavController
+import com.chat.shutup.feature.call.manager.AgoraCallManager
 import com.chat.shutup.domain.repository.AuthRepository
+import com.chat.shutup.domain.model.CallStatus
 import com.chat.shutup.feature.call.presentation.ActiveCallScreen
 import com.chat.shutup.feature.call.presentation.CallViewModel
 import com.chat.shutup.feature.call.presentation.IncomingCallScreen
+import com.chat.shutup.feature.call.presentation.OutgoingCallScreen
 import com.chat.shutup.ui.navigation.AppNavHost
 import com.chat.shutup.ui.navigation.Screen
 import com.chat.shutup.ui.theme.ShutUpChatTheme
@@ -24,6 +33,9 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var authRepository: AuthRepository
 
+    @Inject
+    lateinit var agoraCallManager: AgoraCallManager
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -31,7 +43,32 @@ class MainActivity : ComponentActivity() {
             ShutUpChatTheme {
                 val callViewModel: CallViewModel = hiltViewModel()
                 val callState by callViewModel.callState.collectAsState()
+                val remoteUid by callViewModel.remoteUid.collectAsState()
                 
+                val context = LocalContext.current
+                val permissionLauncher = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.RequestMultiplePermissions()
+                ) { permissions ->
+                    val allGranted = permissions.values.all { it }
+                    if (!allGranted) {
+                        android.util.Log.e("MainActivity", "Permissions not granted")
+                    }
+                }
+
+                val requiredPermissions = arrayOf(
+                    Manifest.permission.RECORD_AUDIO,
+                    Manifest.permission.CAMERA
+                )
+
+                fun checkAndRequestPermissions() {
+                    val missingPermissions = requiredPermissions.filter {
+                        ContextCompat.checkSelfPermission(context, it) != PackageManager.PERMISSION_GRANTED
+                    }
+                    if (missingPermissions.isNotEmpty()) {
+                        permissionLauncher.launch(missingPermissions.toTypedArray())
+                    }
+                }
+
                 val navController = rememberNavController()
                 
                 val startDestination = if (authRepository.currentUser != null) {
@@ -47,17 +84,36 @@ class MainActivity : ComponentActivity() {
 
                 // Show call UI
                 callState?.let { call ->
-                    if (call.status == com.chat.shutup.domain.model.CallStatus.ACCEPTED) {
-                        ActiveCallScreen(
-                            callInfo = call,
-                            onEndCall = { callViewModel.onEndCall() }
-                        )
-                    } else if (call.status == com.chat.shutup.domain.model.CallStatus.RINGING) {
-                        IncomingCallScreen(
-                            callInfo = call,
-                            onAccept = { callViewModel.onAcceptCall() },
-                            onReject = { callViewModel.onRejectCall() }
-                        )
+                    val isCaller = call.callerId == authRepository.currentUser?.uid
+
+                    when (call.status) {
+                        CallStatus.ACCEPTED -> {
+                            checkAndRequestPermissions()
+                            ActiveCallScreen(
+                                callInfo = call,
+                                remoteUid = remoteUid,
+                                agoraCallManager = agoraCallManager,
+                                onEndCall = { callViewModel.onEndCall() }
+                            )
+                        }
+                        CallStatus.RINGING -> {
+                            if (isCaller) {
+                                OutgoingCallScreen(
+                                    callInfo = call,
+                                    onCancel = { callViewModel.onEndCall() }
+                                )
+                            } else {
+                                IncomingCallScreen(
+                                    callInfo = call,
+                                    onAccept = { 
+                                        checkAndRequestPermissions()
+                                        callViewModel.onAcceptCall() 
+                                    },
+                                    onReject = { callViewModel.onRejectCall() }
+                                )
+                            }
+                        }
+                        else -> {}
                     }
                 }
             }

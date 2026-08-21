@@ -6,8 +6,12 @@ data class CallInfo(
     val callerName: String = "",
     val callerImageUrl: String? = null,
     val receiverId: String = "",
+    val receiverName: String = "",
+    val receiverImageUrl: String? = null,
     val type: CallType = CallType.VOICE,
     val status: CallStatus = CallStatus.RINGING,
+    val channelId: String = "",
+    val token: String? = null,
     val timestamp: Long = System.currentTimeMillis()
 )
 

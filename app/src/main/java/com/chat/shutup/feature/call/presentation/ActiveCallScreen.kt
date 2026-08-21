@@ -19,14 +19,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.chat.shutup.domain.model.CallInfo
 import com.chat.shutup.domain.model.CallType
-@Preview
-@Composable
-fun ActiveCallScreenPreview(){
-    ActiveCallScreen(onEndCall = {}, callInfo = CallInfo(callerName = "Shivansh"))
-}
+import com.chat.shutup.feature.call.manager.AgoraCallManager
+
 @Composable
 fun ActiveCallScreen(
     callInfo: CallInfo,
+    remoteUid: Int?,
+    agoraCallManager: AgoraCallManager,
     onEndCall: () -> Unit
 ) {
     var isMicOn by remember { mutableStateOf(true) }
@@ -34,24 +33,49 @@ fun ActiveCallScreen(
 
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         if (callInfo.type == CallType.VIDEO) {
-            // Placeholder for Agora Video View
-            AndroidView(
-                factory = { context ->
-                    android.view.SurfaceView(context).apply {
-                        // In real implementation, pass this to Agora setupRemoteVideo
-                    }
-                },
-                modifier = Modifier.fillMaxSize()
-            )
+            // Remote Video
+            if (remoteUid != null) {
+                AndroidView(
+                    factory = { context ->
+                        android.widget.FrameLayout(context).apply {
+                            agoraCallManager.setupRemoteVideo(remoteUid, this)
+                        }
+                    },
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = Color.White)
+                    Text(
+                        text = "Waiting for remote user...",
+                        color = Color.White,
+                        modifier = Modifier.padding(top = 80.dp)
+                    )
+                }
+            }
             
-            // Small local preview
-            Box(
-                modifier = Modifier
-                    .size(120.dp, 160.dp)
-                    .padding(16.dp)
-                    .background(Color.DarkGray)
-                    .align(Alignment.TopEnd)
-            )
+            // Local Preview
+            if (isVideoOn) {
+                Box(
+                    modifier = Modifier
+                        .size(120.dp, 160.dp)
+                        .padding(16.dp)
+                        .background(Color.DarkGray)
+                        .align(Alignment.TopEnd)
+                ) {
+                    AndroidView(
+                        factory = { context ->
+                            android.widget.FrameLayout(context).apply {
+                                agoraCallManager.setupLocalVideo(this)
+                            }
+                        },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
         } else {
             // Voice Call UI
             Column(

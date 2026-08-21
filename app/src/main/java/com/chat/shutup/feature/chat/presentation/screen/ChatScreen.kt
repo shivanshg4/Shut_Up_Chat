@@ -1,5 +1,7 @@
 package com.chat.shutup.feature.chat.presentation.screen
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -42,12 +44,35 @@ fun ChatScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri?.let {
+            // Handle picked image - e.g. upload to Firebase and send as message
+            // viewModel.onEvent(ChatUiEvent.OnImageSelected(it))
+        }
+    }
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicturePreview()
+    ) { bitmap ->
+        bitmap?.let {
+            // Handle captured bitmap
+        }
+    }
+
     LaunchedEffect(Unit) {
         viewModel.uiEffect.collectLatest { effect ->
             when (effect) {
                 is ChatUiEffect.NavigateBack -> onNavigateBack()
                 is ChatUiEffect.ShowError -> {
                     // Show snackbar or toast
+                }
+                ChatUiEffect.OpenImagePicker -> {
+                    imagePickerLauncher.launch("image/*")
+                }
+                ChatUiEffect.OpenCamera -> {
+                    cameraLauncher.launch(null)
                 }
             }
         }

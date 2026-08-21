@@ -23,20 +23,52 @@ class CallViewModel @Inject constructor(
     private val _callState = MutableStateFlow<CallInfo?>(null)
     val callState = _callState.asStateFlow()
 
+    private val _remoteUid = MutableStateFlow<Int?>(null)
+    val remoteUid = _remoteUid.asStateFlow()
+
     init {
+        // Observe active call from repository (both incoming and outgoing)
+        repository.activeCall
+            .onEach { call ->
+                _callState.value = call
+                if (call != null) {
+                    observeCallStatus(call.callId)
+                }
+            }
+            .launchIn(viewModelScope)
+
+        // Also keep observing incoming calls
         repository.observeIncomingCalls()
-            .catch { e -> android.util.Log.e("CallViewModel", "Error observing calls", e) }
-            .onEach { _callState.value = it }
+            .catch { e -> Log.e("CallViewModel", "Error observing calls", e) }
+            .launchIn(viewModelScope)
+    }
+
+    private fun observeCallStatus(callId: String) {
+        repository.observeCallStatus(callId)
+            .onEach { status ->
+                val currentCall = _callState.value
+                if (currentCall != null && currentCall.callId == callId) {
+                    _callState.update { it?.copy(status = status) }
+                    
+                    when (status) {
+                        CallStatus.ACCEPTED -> {
+                            startAgoraCall(currentCall)
+                        }
+                        CallStatus.REJECTED, CallStatus.ENDED -> {
+                            cleanupCall()
+                        }
+                        else -> {}
+                    }
+                }
+            }
             .launchIn(viewModelScope)
     }
 
     fun onAcceptCall() {
         val call = _callState.value ?: return
         viewModelScope.launch {
-            val result  = repository.updateCallStatus(call.callId, CallStatus.ACCEPTED)
-
+            val result = repository.updateCallStatus(call.callId, CallStatus.ACCEPTED)
             if (result.isSuccess) {
-                // Start Agora call
                 startAgoraCall(call)
             }
         }
@@ -46,7 +78,7 @@ class CallViewModel @Inject constructor(
         val call = _callState.value ?: return
         viewModelScope.launch {
             repository.updateCallStatus(call.callId, CallStatus.REJECTED)
-            _callState.value = null
+            cleanupCall()
         }
     }
 
@@ -54,8 +86,16 @@ class CallViewModel @Inject constructor(
         val call = _callState.value ?: return
         viewModelScope.launch {
             repository.updateCallStatus(call.callId, CallStatus.ENDED)
-            _callState.value = null
+            cleanupCall()
         }
+    }
+
+    private fun cleanupCall() {
+        agoraCallManager.removeHandler(agoraEventHandler)
+        agoraCallManager.leaveChannel()
+        repository.clearActiveCall()
+        _callState.value = null
+        _remoteUid.value = null
     }
 
     private val agoraEventHandler = object : IRtcEngineEventHandler() {
@@ -63,7 +103,7 @@ class CallViewModel @Inject constructor(
         override fun onJoinChannelSuccess(channel: String, uid: Int, elapsed: Int) {
             Log.d(
                 "AGORA_CALL",
-                "Joined Agora channel successfully: ${connection?.channelId}"
+                "Joined Agora channel successfully: $channel"
             )
         }
 
@@ -75,9 +115,7 @@ class CallViewModel @Inject constructor(
                 "AGORA_CALL",
                 "Remote user joined: $uid"
             )
-
-            // Store remote UID in StateFlow if your UI
-            // needs to display the remote video.
+            _remoteUid.value = uid
         }
 
         override fun onUserOffline(
@@ -88,6 +126,7 @@ class CallViewModel @Inject constructor(
                 "AGORA_CALL",
                 "Remote user left: uid=$uid reason=$reason"
             )
+            _remoteUid.value = null
         }
 
         override fun onError(
@@ -98,76 +137,29 @@ class CallViewModel @Inject constructor(
                 "Agora error: $err"
             )
         }
-
-        override fun onConnectionStateChanged(
-            state: Int,
-            reason: Int
-        ) {
-            Log.d(
-                "AGORA_CALL",
-                "Connection state changed: state=$state reason=$reason"
-            )
-        }
     }
 
     private fun startAgoraCall(call: CallInfo) {
-
         try {
+            Log.d("AGORA_CALL", "Starting Agora call: channelId=${call.callId}")
 
-            Log.d(
-                "AGORA_CALL",
-                "Starting Agora call"
-            )
-
-            Log.d(
-                "AGORA_CALL",
-                "channelId=${call.channelId}"
-            )
-
-            Log.d(
-                "AGORA_CALL",
-                "tokenPresent=${!call.token.isNullOrEmpty()}"
-            )
-
-            // 1. Initialize Agora engine
-            val initialized = agoraCallManager.initEngine(
-                agoraEventHandler
-            )
-
+            val initialized = agoraCallManager.initEngine(agoraEventHandler)
             if (!initialized) {
-                Log.e(
-                    "AGORA_CALL",
-                    "Failed to initialize Agora engine"
-                )
+                Log.e("AGORA_CALL", "Failed to initialize Agora engine")
                 return
             }
 
-            // 2. Join Agora channel
             val result = agoraCallManager.joinChannel(
-                channelId = call.channelId,
+                channelId = call.callId,
                 token = call.token,
                 uid = 0
             )
 
-            Log.d(
-                "AGORA_CALL",
-                "joinChannel result=$result"
-            )
-
             if (result != 0) {
-                Log.e(
-                    "AGORA_CALL",
-                    "Failed to join Agora channel. Error=$result"
-                )
+                Log.e("AGORA_CALL", "Failed to join Agora channel. Error=$result")
             }
-
         } catch (e: Exception) {
-
-            Log.e(
-                "AGORA_CALL",
-                "Exception while starting Agora call",
-                e
-            )
+            Log.e("AGORA_CALL", "Exception while starting Agora call", e)
         }
     }
 }
