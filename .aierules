@@ -1,0 +1,25 @@
+# Shut Up Chat - Project Rules & Context
+
+## Project Overview
+- **Name:** Shut Up Chat
+- **Tech Stack:** Kotlin, Jetpack Compose, Material 3, Hilt (DI), Room (Database), Retrofit/OkHttp (Networking), Firebase (Auth/FCM/Crashlytics), Kotlin Serialization.
+- **Architecture:** MVVM with Clean Architecture principles.
+- **Navigation:** Type-safe Compose Navigation (using `@Serializable` routes).
+
+## Development Standards
+- **UI:** Use Jetpack Compose and Material 3 components. Maintain consistency with the `ShutUpChatTheme`.
+- **Navigation:** All navigation logic must reside in `AppNavHost.kt`. Define routes as `Serializable` objects/classes in `Screens.kt`.
+- **Dependency Injection:** Use Hilt for all dependency injections. ViewModels should be injected using `hiltViewModel()` within composables.
+- **Resources:** Use the Version Catalog (`libs.versions.toml`) for all dependencies. Avoid hardcoding versions in `build.gradle.kts`.
+- **Firebase:** Ensure `google-services.json` is present in the `app/` directory for Firebase features. Use modern Firebase artifacts (without `-ktx` suffix where possible).
+
+## Code Style
+- Follow standard Kotlin coding conventions.
+- Use trailing commas in Compose parameters for better diffs.
+- Keep composables small and focused; hoist state and navigation lambdas.
+- Prefer `val` over `var` whenever possible.
+
+## IDE Interactions
+- When suggesting changes, use `replace_file_content` or `multi_replace_file_content` for surgical edits.
+- Always check `libs.versions.toml` before adding new dependencies.
+- Sync Gradle after modifying build scripts or the version catalog.

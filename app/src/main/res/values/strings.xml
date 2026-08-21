@@ -1,0 +1,21 @@
+<resources>
+    <string name="app_name">Shut Up Chat</string>
+    <string name="chat_placeholder">Message...</string>
+    <string name="back">Back</string>
+    <string name="video_call">Video Call</string>
+    <string name="call">Call</string>
+    <string name="more">More</string>
+    <string name="add_attachment">Add attachment</string>
+    <string name="emoji">Emoji</string>
+    <string name="camera">Camera</string>
+    <string name="send">Send</string>
+    <string name="voice_message">Voice message</string>
+
+    <!-- Facebook Login -->
+    <string name="facebook_app_id">YOUR_FACEBOOK_APP_ID</string>
+    <string name="fb_login_protocol_scheme">fbYOUR_FACEBOOK_APP_ID</string>
+    <string name="facebook_client_token">YOUR_FACEBOOK_CLIENT_TOKEN</string>
+
+    <!-- Agora Config -->
+    <string name="agora_app_id">YOUR_AGORA_APP_ID</string>
+</resources>
