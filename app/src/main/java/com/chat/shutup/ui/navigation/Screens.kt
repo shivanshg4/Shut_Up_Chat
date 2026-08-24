@@ -20,4 +20,16 @@ sealed interface Screen {
 
     @Serializable
     data object Search : Screen
+
+    @Serializable
+    data object Trips : Screen
+
+    @Serializable
+    data object CreateTrip : Screen
+
+    @Serializable
+    data class TripDetails(val tripId: String) : Screen
+
+    @Serializable
+    data class TripMap(val tripId: String) : Screen
 }

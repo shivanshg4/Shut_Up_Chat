@@ -11,6 +11,10 @@ import com.chat.shutup.feature.auth.presentation.signup.SignupScreen
 import com.chat.shutup.feature.chat.presentation.screen.ChatScreen
 import com.chat.shutup.feature.profile.presentation.ProfileScreen
 import com.chat.shutup.feature.search.presentation.UserSearchScreen
+import com.chat.shutup.feature.trip.presentation.screen.CreateTripScreen
+import com.chat.shutup.feature.trip.presentation.screen.TripDetailsScreen
+import com.chat.shutup.feature.trip.presentation.screen.TripMapScreen
+import com.chat.shutup.feature.trip.presentation.screen.TripsScreen
 import com.chat.shutup.ui.chat_list.ChatListScreen
 
 @Composable
@@ -54,6 +58,9 @@ fun AppNavHost(
                 onChatClick = { chatId ->
                     navController.navigate(Screen.Chat(chatId))
                 },
+                onTripsClick = {
+                    navController.navigate(Screen.Trips)
+                },
                 onSearchClick = {
                     navController.navigate(Screen.Search)
                 },
@@ -86,6 +93,34 @@ fun AppNavHost(
                         popUpTo(Screen.Search) { inclusive = true }
                     }
                 }
+            )
+        }
+        composable<Screen.Trips> {
+            TripsScreen(
+                onBackClick = { navController.popBackStack() },
+                onCreateTripClick = { navController.navigate(Screen.CreateTrip) },
+                onTripClick = { tripId -> navController.navigate(Screen.TripDetails(tripId)) }
+            )
+        }
+        composable<Screen.CreateTrip> {
+            CreateTripScreen(
+                onBackClick = { navController.popBackStack() },
+                onTripCreated = { tripId ->
+                    navController.navigate(Screen.TripDetails(tripId)) {
+                        popUpTo(Screen.CreateTrip) { inclusive = true }
+                    }
+                }
+            )
+        }
+        composable<Screen.TripDetails> {
+            TripDetailsScreen(
+                onBackClick = { navController.popBackStack() },
+                onOpenMapClick = { tripId -> navController.navigate(Screen.TripMap(tripId)) }
+            )
+        }
+        composable<Screen.TripMap> {
+            TripMapScreen(
+                onNavigateBack = { navController.popBackStack() }
             )
         }
     }

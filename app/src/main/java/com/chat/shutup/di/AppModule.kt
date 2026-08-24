@@ -4,11 +4,18 @@ import android.app.Application
 import androidx.room.Room
 import com.chat.shutup.data.local.ChatDao
 import com.chat.shutup.data.local.ChatDatabase
+import com.chat.shutup.data.local.TripDao
 import com.chat.shutup.data.remote.ChatApi
 import com.chat.shutup.data.repository.AuthRepositoryImpl
 import com.chat.shutup.data.repository.ChatRepositoryImpl
+import com.chat.shutup.data.repository.DefaultLocationClient
+import com.chat.shutup.data.repository.TripRepositoryImpl
 import com.chat.shutup.domain.repository.AuthRepository
 import com.chat.shutup.domain.repository.ChatRepository
+import com.chat.shutup.domain.repository.LocationClient
+import com.chat.shutup.domain.repository.TripRepository
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -36,7 +43,25 @@ abstract class AppModule {
         authRepositoryImpl: AuthRepositoryImpl
     ): AuthRepository
 
+    @Binds
+    @Singleton
+    abstract fun bindTripRepository(
+        tripRepositoryImpl: TripRepositoryImpl
+    ): TripRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindLocationClient(
+        defaultLocationClient: DefaultLocationClient
+    ): LocationClient
+
     companion object {
+        @Provides
+        @Singleton
+        fun provideFusedLocationProviderClient(app: Application): FusedLocationProviderClient {
+            return LocationServices.getFusedLocationProviderClient(app)
+        }
+
         @Provides
         @Singleton
         fun provideFirebaseAuth(): com.google.firebase.auth.FirebaseAuth {
@@ -63,6 +88,12 @@ abstract class AppModule {
         @Singleton
         fun provideChatDao(db: ChatDatabase): ChatDao {
             return db.dao
+        }
+
+        @Provides
+        @Singleton
+        fun provideTripDao(db: ChatDatabase): TripDao {
+            return db.tripDao
         }
 
         @Provides

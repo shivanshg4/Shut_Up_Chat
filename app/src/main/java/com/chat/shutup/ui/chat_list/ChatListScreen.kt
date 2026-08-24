@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
@@ -29,6 +30,7 @@ import java.util.*
 fun ChatListScreen(
     viewModel: ChatListViewModel = hiltViewModel(),
     onChatClick: (String) -> Unit,
+    onTripsClick: () -> Unit = {},
     onSearchClick: () -> Unit,
     onProfileClick: () -> Unit
 ) {
@@ -39,6 +41,9 @@ fun ChatListScreen(
             TopAppBar(
                 title = { Text("Chats") },
                 actions = {
+                    IconButton(onClick = onTripsClick) {
+                        Icon(Icons.Default.Groups, contentDescription = "Trips")
+                    }
                     IconButton(onClick = onSearchClick) {
                         Icon(Icons.Default.Search, contentDescription = "Search")
                     }
