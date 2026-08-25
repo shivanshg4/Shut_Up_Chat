@@ -20,7 +20,7 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        manifestPlaceholders["MAPS_API_KEY"] = "dummy_key"
+        manifestPlaceholders["MAPS_API_KEY"] = "AIzaSyDIoqxlpAQqRhBVlj6R5-yjQLCRWobtQgs"
     }
 
     ksp {
