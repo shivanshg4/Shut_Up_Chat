@@ -1,5 +1,6 @@
 package com.chat.shutup.feature.trip.presentation.screen
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -115,6 +116,26 @@ fun TripDetailsScreen(
                         )
                     }
 
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        val trackingColor = if (uiState.isTrackingActive) Color(0xFF4CAF50) else Color.Gray
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .padding(2.dp)
+                                .background(trackingColor, shape = MaterialTheme.shapes.small)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = if (uiState.isTrackingActive) "Location sharing: Active" else "Location sharing: Inactive",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = trackingColor
+                        )
+                    }
+
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Card(
@@ -191,30 +212,44 @@ fun TripDetailsScreen(
                     Spacer(modifier = Modifier.weight(1f))
                     
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        OutlinedButton(
-                            onClick = {
-                                val shareText = "🚗 Join my trip on ShutUp!\n\nTrip: ${trip.name}\nFrom: ${trip.origin?.address}\nTo: ${trip.destination?.address}\n\nInvite Code: ${trip.inviteCode}\n\nOpen ShutUp and use this code to join."
-                                val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
-                                    type = "text/plain"
-                                    putExtra(android.content.Intent.EXTRA_TEXT, shareText)
-                                }
-                                context.startActivity(android.content.Intent.createChooser(intent, "Share Trip Invite"))
-                            },
-                            modifier = Modifier.weight(1f)
+                        Button(
+                            onClick = { viewModel.toggleTracking() },
+                            modifier = Modifier.weight(1f),
+                            colors = if (uiState.isTrackingActive) {
+                                ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                            } else {
+                                ButtonDefaults.buttonColors()
+                            }
                         ) {
-                            Icon(Icons.Default.Share, contentDescription = null)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Share")
+                            Text(if (uiState.isTrackingActive) "Stop Sharing" else "Start Trip")
                         }
-                        
+
                         Button(
                             onClick = { onOpenMapClick(trip.id) },
-                            modifier = Modifier.weight(1.4f)
+                            modifier = Modifier.weight(1f)
                         ) {
                             Icon(Icons.Default.Map, contentDescription = null)
                             Spacer(modifier = Modifier.width(8.dp))
                             Text("Open Map")
                         }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    OutlinedButton(
+                        onClick = {
+                            val shareText = "🚗 Join my trip on ShutUp!\n\nTrip: ${trip.name}\nFrom: ${trip.origin?.address}\nTo: ${trip.destination?.address}\n\nInvite Code: ${trip.inviteCode}\n\nOpen ShutUp and use this code to join."
+                            val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                type = "text/plain"
+                                putExtra(android.content.Intent.EXTRA_TEXT, shareText)
+                            }
+                            context.startActivity(android.content.Intent.createChooser(intent, "Share Trip Invite"))
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.Share, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Share Trip")
                     }
                 }
             } else {

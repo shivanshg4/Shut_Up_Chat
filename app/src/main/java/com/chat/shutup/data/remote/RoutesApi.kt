@@ -12,6 +12,8 @@ interface RoutesApi {
     suspend fun computeRoutes(
         @Header("X-Goog-Api-Key") apiKey: String,
         @Header("X-Goog-FieldMask") fieldMask: String = "routes.distanceMeters,routes.duration,routes.polyline.encodedPolyline",
+        @Header("X-Android-Package") packageName: String,
+        @Header("X-Android-Cert") certFingerprint: String,
         @Body request: RoutesRequest
     ): RoutesResponse
 

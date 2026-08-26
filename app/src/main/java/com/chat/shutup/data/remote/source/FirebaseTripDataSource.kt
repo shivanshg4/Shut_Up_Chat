@@ -73,4 +73,8 @@ class FirebaseTripDataSource @Inject constructor(
         updates["/tripInviteCodes/$inviteCode"] = null
         db.reference.updateChildren(updates).await()
     }
+
+    suspend fun pushTripEvent(tripId: String, event: com.chat.shutup.domain.model.TripNotificationData) {
+        db.getReference("tripEvents").child(tripId).push().setValue(event).await()
+    }
 }

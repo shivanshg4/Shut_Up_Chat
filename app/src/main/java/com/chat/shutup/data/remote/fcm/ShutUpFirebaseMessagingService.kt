@@ -9,20 +9,49 @@ import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.chat.shutup.R
+import com.chat.shutup.domain.repository.FcmRepository
+import com.chat.shutup.feature.trip.data.service.TripNotificationHelper
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 import kotlin.random.Random
 
+@AndroidEntryPoint
 class ShutUpFirebaseMessagingService : FirebaseMessagingService() {
+
+    @Inject
+    lateinit var fcmRepository: FcmRepository
+
+    @Inject
+    lateinit var tripNotificationHelper: TripNotificationHelper
+
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onNewToken(token: String) {
         super.onNewToken(token)
         Log.d("FCM", "New token: $token")
-        // Upload token to server here
+        serviceScope.launch {
+            fcmRepository.updateToken(token)
+        }
     }
 
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
+
+        val type = message.data["type"]
+        val tripId = message.data["tripId"]
+        
+        if (type == "TRIP_TOGETHER" && tripId != null) {
+            val title = message.data["title"] ?: "Trip Update"
+            val body = message.data["body"] ?: ""
+            tripNotificationHelper.showEventNotification(title, body, tripId)
+            return
+        }
 
         val title = message.notification?.title ?: message.data["title"]
         val body = message.notification?.body ?: message.data["body"]

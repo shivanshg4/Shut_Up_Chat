@@ -14,7 +14,11 @@ class TripLocationRepositoryImpl @Inject constructor(
 ) : TripLocationRepository {
 
     override suspend fun updateMyLocation(tripId: String, userId: String, location: LocationPoint) {
-        dataSource.updateMyLocation(tripId, userId, location.toFirebaseDto())
+        try {
+            dataSource.updateMyLocation(tripId, userId, location.toFirebaseDto())
+        } catch (e: Exception) {
+            android.util.Log.e("TripTrackingDebug", "Failed to update location: ${e.message}")
+        }
     }
 
     override fun observeMemberLocations(tripId: String): Flow<Map<String, LocationPoint>> {
@@ -24,6 +28,10 @@ class TripLocationRepositoryImpl @Inject constructor(
     }
 
     override suspend fun removeMyLocation(tripId: String, userId: String) {
-        dataSource.removeMyLocation(tripId, userId)
+        try {
+            dataSource.removeMyLocation(tripId, userId)
+        } catch (e: Exception) {
+            android.util.Log.e("TripTrackingDebug", "Failed to remove location: ${e.message}")
+        }
     }
 }

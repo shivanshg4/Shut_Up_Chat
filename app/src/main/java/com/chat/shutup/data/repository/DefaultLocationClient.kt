@@ -3,6 +3,7 @@ package com.chat.shutup.data.repository
 import android.annotation.SuppressLint
 import android.content.Context
 import android.location.LocationManager
+import android.os.Looper
 import com.chat.shutup.domain.model.LocationPoint
 import com.chat.shutup.domain.repository.LocationClient
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -59,7 +60,7 @@ class DefaultLocationClient @Inject constructor(
             client.requestLocationUpdates(
                 request,
                 locationCallback,
-                null
+                Looper.getMainLooper()
             )
 
             awaitClose {

@@ -113,7 +113,25 @@ class TripRepositoryImpl @Inject constructor(
         tripMemberDao.insertMember(member.toTripMemberEntity(tripId))
         
         // 2. Upload membership to Firebase
-        firebaseDataSource.addMember(tripId, member.toFirebaseDto())
+        try {
+            firebaseDataSource.addMember(tripId, member.toFirebaseDto())
+        } catch (e: Exception) {
+            android.util.Log.e("TripTrackingDebug", "Failed to upload membership: ${e.message}")
+        }
+
+        // 3. Push Event
+        pushTripEvent(
+            tripId,
+            com.chat.shutup.domain.model.TripNotificationData(
+                type = com.chat.shutup.domain.model.TripNotificationType.MEMBER_JOINED,
+                tripId = tripId,
+                tripName = "", // To be filled by backend or using current context
+                actorUserId = userId,
+                actorName = name,
+                title = "New Member",
+                body = "$name joined the trip"
+            )
+        )
     }
 
     override suspend fun updateTripRoute(tripId: String, route: com.chat.shutup.domain.model.TripRoute) {
@@ -123,7 +141,11 @@ class TripRepositoryImpl @Inject constructor(
         tripDao.insertTrip(updatedTrip.toTripEntity())
 
         // 2. Update Firebase
-        firebaseDataSource.updateTripRoute(tripId, route.toFirebaseDto())
+        try {
+            firebaseDataSource.updateTripRoute(tripId, route.toFirebaseDto())
+        } catch (e: Exception) {
+            android.util.Log.e("TripTrackingDebug", "Failed to update trip route: ${e.message}")
+        }
     }
     
     override suspend fun ensureTripLocal(trip: Trip) {
@@ -162,6 +184,14 @@ class TripRepositoryImpl @Inject constructor(
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
+        }
+    }
+
+    override suspend fun pushTripEvent(tripId: String, event: com.chat.shutup.domain.model.TripNotificationData) {
+        try {
+            firebaseDataSource.pushTripEvent(tripId, event)
+        } catch (e: Exception) {
+            android.util.Log.e("TripTrackingDebug", "Failed to push trip event: ${e.message}")
         }
     }
 }

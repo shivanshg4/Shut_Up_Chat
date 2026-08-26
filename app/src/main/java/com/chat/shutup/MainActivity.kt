@@ -10,11 +10,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.runtime.LaunchedEffect
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.chat.shutup.feature.call.manager.AgoraCallManager
 import com.chat.shutup.domain.repository.AuthRepository
@@ -75,6 +78,11 @@ class MainActivity : ComponentActivity() {
 
                 val navController = rememberNavController()
                 
+                // Handle notification navigation
+                LaunchedEffect(intent) {
+                    handleIntent(intent, navController)
+                }
+
                 val startDestination = if (authRepository.currentUser != null) {
                     Screen.ChatList
                 } else {
@@ -120,6 +128,21 @@ class MainActivity : ComponentActivity() {
                         else -> {}
                     }
                 }
+            }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+    }
+
+    private fun handleIntent(intent: Intent, navController: NavController) {
+        val tripId = intent.getStringExtra("tripId")
+        if (tripId != null) {
+            navController.navigate(Screen.TripMap(tripId)) {
+                // Ensure we don't stack multiple map instances
+                launchSingleTop = true
             }
         }
     }

@@ -1,20 +1,30 @@
 package com.chat.shutup.feature.trip.presentation.viewmodel
 
+import android.content.Context
+import android.content.Intent
+import android.os.Build
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
+import android.util.Log
 import com.chat.shutup.domain.repository.AuthRepository
 import com.chat.shutup.domain.repository.LocationClient
 import com.chat.shutup.domain.repository.RouteRepository
+import com.chat.shutup.domain.repository.TrackingRepository
+import com.chat.shutup.domain.repository.TrackingStatus
 import com.chat.shutup.domain.repository.TripLocationRepository
 import com.chat.shutup.domain.repository.TripRepository
 import com.chat.shutup.domain.model.Trip
 import com.chat.shutup.domain.model.TripMarkerType
+import com.chat.shutup.domain.util.RouteProgressCalculator
+import com.chat.shutup.feature.trip.data.service.TripLocationForegroundService
 import com.chat.shutup.feature.trip.presentation.state.MemberLocationState
+import com.chat.shutup.feature.trip.presentation.state.RouteRequestState
 import com.chat.shutup.feature.trip.presentation.state.TripMapUiState
 import com.chat.shutup.ui.navigation.Screen
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -27,10 +37,12 @@ class TripMapViewModel @Inject constructor(
     private val tripRepository: TripRepository,
     private val routeRepository: RouteRepository,
     private val authRepository: AuthRepository,
+    private val trackingRepository: TrackingRepository,
+    @ApplicationContext private val context: Context,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    private val tripId: String = try {
+    val tripId: String = try {
         savedStateHandle.toRoute<Screen.TripMap>().tripId
     } catch (e: Exception) {
         ""
@@ -44,12 +56,69 @@ class TripMapViewModel @Inject constructor(
     private var locationJob: Job? = null
     private var membersJob: Job? = null
     private var tripJob: Job? = null
+    private val offRouteStates = mutableMapOf<String, Boolean>()
 
     init {
         if (tripId.isNotEmpty()) {
             observeMembersAndLocations()
             observeTrip()
+            observeTrackingState()
         }
+    }
+
+    private fun observeTrackingState() {
+        combine(
+            trackingRepository.activeTripId,
+            trackingRepository.trackingStatus
+        ) { activeId, status ->
+            _uiState.update { 
+                it.copy(
+                    activeTrackingTripId = activeId,
+                    trackingStatus = status
+                )
+            }
+        }.launchIn(viewModelScope)
+    }
+
+    fun toggleTracking() {
+        Log.d("TripTrackingDebug", "START_CLICKED: tripId=$tripId")
+        val currentStatus = uiState.value.trackingStatus
+        val activeId = uiState.value.activeTrackingTripId
+        
+        if (currentStatus == TrackingStatus.TRACKING && activeId == tripId) {
+            stopTracking()
+        } else if (activeId != null && activeId != tripId) {
+            _uiState.update { it.copy(error = "Tracking already active for another trip") }
+        } else {
+            startTracking()
+        }
+    }
+
+    private fun startTracking() {
+        if (!_uiState.value.isPermissionGranted) {
+            Log.d("TripTrackingDebug", "PERMISSION_CHECK: FAILED")
+            return
+        }
+        Log.d("TripTrackingDebug", "PERMISSION_CHECK: SUCCESS")
+        
+        val intent = Intent(context, TripLocationForegroundService::class.java).apply {
+            action = TripLocationForegroundService.ACTION_START
+            putExtra(TripLocationForegroundService.EXTRA_TRIP_ID, tripId)
+        }
+        
+        Log.d("TripTrackingDebug", "START_FOREGROUND_SERVICE: tripId=$tripId")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            context.startForegroundService(intent)
+        } else {
+            context.startService(intent)
+        }
+    }
+
+    private fun stopTracking() {
+        val intent = Intent(context, TripLocationForegroundService::class.java).apply {
+            action = TripLocationForegroundService.ACTION_STOP
+        }
+        context.startService(intent)
     }
 
     fun onMarkerTypeSelected(markerType: TripMarkerType) {
@@ -58,7 +127,6 @@ class TripMapViewModel @Inject constructor(
 
         viewModelScope.launch {
             try {
-                // Find current member to get their details
                 val currentMember = _uiState.value.members.find { it.member.userId == userId }?.member 
                     ?: return@launch
 
@@ -79,23 +147,90 @@ class TripMapViewModel @Inject constructor(
         membersJob?.cancel()
         membersJob = combine(
             tripRepository.getTripMembers(tripId),
-            tripLocationRepository.observeMemberLocations(tripId)
-        ) { members, locations ->
+            tripLocationRepository.observeMemberLocations(tripId),
+            _uiState.map { it.route }.distinctUntilChanged()
+        ) { members, locations, route ->
+            // First, calculate current user's progress to compare others against
+            val currentUserLocation = locations[currentUserId]
+            val currentUserProgress = if (currentUserLocation != null && route != null) {
+                RouteProgressCalculator.calculateProgress(
+                    userId = currentUserId ?: "",
+                    location = currentUserLocation,
+                    routePoints = route.points,
+                    totalDistanceMeters = route.distanceMeters
+                ).progressDistanceMeters
+            } else null
+
             members.map { member ->
                 val location = locations[member.userId]
                 val isStale = location?.let { 
                     System.currentTimeMillis() - it.timestamp > STALE_THRESHOLD_MS 
                 } ?: true
                 
+                val progress = if (location != null && route != null) {
+                    RouteProgressCalculator.calculateProgress(
+                        userId = member.userId,
+                        location = location,
+                        routePoints = route.points,
+                        totalDistanceMeters = route.distanceMeters,
+                        currentUserProgress = if (member.userId != currentUserId) currentUserProgress else null
+                    )
+                } else null
+
                 MemberLocationState(
                     member = member,
                     location = location,
+                    progress = progress,
                     isStale = isStale
                 )
             }
         }.onEach { memberStates ->
             _uiState.update { it.copy(members = memberStates) }
+            
+            handleOffRouteEvents(memberStates)
+
+            // Also update currentLocation for map centering/UI
+            memberStates.find { it.member.userId == currentUserId }?.location?.let { loc ->
+                _uiState.update { it.copy(currentLocation = loc) }
+            }
         }.launchIn(viewModelScope)
+    }
+
+    private fun handleOffRouteEvents(memberStates: List<MemberLocationState>) {
+        memberStates.forEach { state ->
+            val userId = state.member.userId
+            val isOffRoute = state.progress?.isOffRoute == true
+            val wasOffRoute = offRouteStates[userId] ?: false
+
+            if (isOffRoute && !wasOffRoute) {
+                // Member just went off route
+                offRouteStates[userId] = true
+                pushOffRouteEvent(state, true)
+            } else if (!isOffRoute && wasOffRoute) {
+                // Member just came back on route
+                offRouteStates[userId] = false
+                pushOffRouteEvent(state, false)
+            }
+        }
+    }
+
+    private fun pushOffRouteEvent(state: MemberLocationState, isOffRoute: Boolean) {
+        viewModelScope.launch {
+            tripRepository.pushTripEvent(
+                tripId,
+                com.chat.shutup.domain.model.TripNotificationData(
+                    type = if (isOffRoute) com.chat.shutup.domain.model.TripNotificationType.MEMBER_OFF_ROUTE 
+                           else com.chat.shutup.domain.model.TripNotificationType.MEMBER_BACK_ON_ROUTE,
+                    tripId = tripId,
+                    tripName = "",
+                    actorUserId = state.member.userId,
+                    actorName = state.member.name,
+                    title = if (isOffRoute) "Off Route" else "Back on Route",
+                    body = if (isOffRoute) "${state.member.name} is off the planned route" 
+                           else "${state.member.name} is back on the planned route"
+                )
+            )
+        }
     }
 
     private fun observeTrip() {
@@ -105,8 +240,10 @@ class TripMapViewModel @Inject constructor(
                 trip?.let { t ->
                     _uiState.update { it.copy(route = t.route) }
                     
-                    // If trip has origin and destination but no route, or if route points are empty, fetch it
-                    if (t.origin != null && t.destination != null && (t.route == null || t.route.points.isEmpty())) {
+                    // Trigger fetch only if route is missing and we haven't tried/failed yet
+                    if (t.origin != null && t.destination != null && 
+                        t.route == null && 
+                        _uiState.value.routeRequestState == RouteRequestState.IDLE) {
                         fetchRoute(t)
                     }
                 }
@@ -114,84 +251,67 @@ class TripMapViewModel @Inject constructor(
             .launchIn(viewModelScope)
     }
 
+    fun retryRouteFetch() {
+        _uiState.update { it.copy(routeRequestState = RouteRequestState.IDLE, routeError = null) }
+        viewModelScope.launch {
+            val tripNow = tripRepository.getTrip(tripId).firstOrNull()
+            tripNow?.let { fetchRoute(it) }
+        }
+    }
+
     private fun fetchRoute(trip: Trip) {
         val origin = trip.origin ?: return
         val destination = trip.destination ?: return
         
-        if (_uiState.value.isRouteLoading) return
+        if (_uiState.value.routeRequestState == RouteRequestState.LOADING) return
 
         viewModelScope.launch {
-            _uiState.update { it.copy(isRouteLoading = true) }
+            _uiState.update { it.copy(routeRequestState = RouteRequestState.LOADING, routeError = null) }
             val result = routeRepository.getRoute(origin, destination, trip.travelMode.name)
             result.onSuccess { route ->
-                _uiState.update { it.copy(route = route, isRouteLoading = false, error = null) }
-                
-                // Only the creator should update the route in Firebase
+                _uiState.update { 
+                    it.copy(
+                        route = route, 
+                        routeRequestState = RouteRequestState.SUCCESS, 
+                        routeError = null 
+                    )
+                }
                 if (trip.creatorId == currentUserId) {
-                    tripRepository.updateTripRoute(tripId, route)
+                    Log.d("TripTrackingDebug", "Attempting to update route in Firebase. TripId: $tripId, CreatorId: ${trip.creatorId}, CurrentUserId: $currentUserId")
+                    viewModelScope.launch {
+                        try {
+                            tripRepository.updateTripRoute(tripId, route)
+                            Log.d("TripTrackingDebug", "Route update successful in Firebase")
+                        } catch (e: Exception) {
+                            Log.e("TripTrackingDebug", "Failed to update route in Firebase: ${e.message}", e)
+                        }
+                    }
+                } else {
+                    Log.d("TripTrackingDebug", "Skipping route update in Firebase - user is not creator. CreatorId: ${trip.creatorId}, CurrentUserId: $currentUserId")
                 }
             }
             .onFailure { e ->
-                _uiState.update { it.copy(isRouteLoading = false, error = "Failed to calculate route: ${e.message}") }
+                _uiState.update { 
+                    it.copy(
+                        routeRequestState = RouteRequestState.ERROR, 
+                        routeError = e.message ?: "Failed to calculate route"
+                    ) 
+                }
             }
         }
     }
 
     fun onPermissionResult(isGranted: Boolean) {
         _uiState.update { it.copy(isPermissionGranted = isGranted) }
-        if (isGranted) {
-            startLocationUpdates()
-        } else {
-            _uiState.update { it.copy(error = "Location permission is required to show your position.") }
-        }
-    }
-
-    fun startLocationUpdates() {
-        if (!_uiState.value.isPermissionGranted) return
-        
-        locationJob?.cancel()
-        _uiState.update { it.copy(isLoading = true, isTracking = true) }
-        
-        locationJob = locationClient.getLocationUpdates(LOCATION_UPDATE_INTERVAL_MS)
-            .onEach { location ->
-                _uiState.update { 
-                    it.copy(
-                        currentLocation = location,
-                        isLoading = false,
-                        error = null
-                    )
-                }
-                if (currentUserId != null && tripId.isNotEmpty()) {
-                    // Update location with bearing for marker rotation
-                    tripLocationRepository.updateMyLocation(tripId, currentUserId, location)
-                }
-            }
-            .catch { e ->
-                _uiState.update { 
-                    it.copy(
-                        error = e.message ?: "Unknown location error",
-                        isLoading = false
-                    )
-                }
-            }
-            .launchIn(viewModelScope)
-    }
-
-    fun stopLocationUpdates() {
-        locationJob?.cancel()
-        locationJob = null
-        _uiState.update { it.copy(isTracking = false) }
     }
 
     override fun onCleared() {
         super.onCleared()
-        stopLocationUpdates()
         membersJob?.cancel()
         tripJob?.cancel()
     }
 
     companion object {
-        private const val LOCATION_UPDATE_INTERVAL_MS = 5000L
         private const val STALE_THRESHOLD_MS = 60000L // 1 minute
     }
 }

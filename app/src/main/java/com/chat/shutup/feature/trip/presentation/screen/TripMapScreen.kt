@@ -4,6 +4,9 @@ import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import android.os.Build
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,15 +18,21 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.EditLocationAlt
 import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -44,11 +53,14 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.chat.shutup.domain.model.TripMarkerType
+import com.chat.shutup.domain.repository.TrackingStatus
+import com.chat.shutup.feature.trip.presentation.state.RouteRequestState
 import com.chat.shutup.feature.trip.presentation.util.TripMarkerAssetProvider
 import com.chat.shutup.feature.trip.presentation.viewmodel.TripMapViewModel
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -92,9 +104,21 @@ fun TripMapScreen(
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
-        val isGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+        val isLocationGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
                 permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
-        viewModel.onPermissionResult(isGranted)
+        viewModel.onPermissionResult(isLocationGranted)
+    }
+
+    LaunchedEffect(Unit) {
+        val permissions = mutableListOf(
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            permissions.add(Manifest.permission.POST_NOTIFICATIONS)
+        }
+        
+        permissionLauncher.launch(permissions.toTypedArray())
     }
 
     LaunchedEffect(Unit) {
@@ -257,8 +281,15 @@ fun TripMapScreen(
                                 MarkerState(position = LatLng(location.latitude, location.longitude))
                             },
                             title = if (isCurrentUser) "You" else memberState.member.name,
-                            snippet = "${memberState.member.role} • Updated ${formatLastUpdated(location.timestamp)}",
+                            snippet = if (memberState.progress != null) {
+                                val p = memberState.progress
+                                if (p.isOffRoute) "Off route • ${formatLastUpdated(location.timestamp)}" 
+                                else "${String.format(Locale.getDefault(), "%.1f", p.progressDistanceMeters / 1000.0)} km • ${formatLastUpdated(location.timestamp)}"
+                            } else {
+                                "${memberState.member.role} • Updated ${formatLastUpdated(location.timestamp)}"
+                            },
                             icon = TripMarkerAssetProvider.getMarkerIcon(
+                                context = context,
                                 type = memberState.member.markerType,
                                 isCurrentUser = isCurrentUser,
                                 isStale = memberState.isStale
@@ -277,54 +308,236 @@ fun TripMapScreen(
                 }
             }
             
-            // Route information card
-            uiState.route?.let { route ->
+            // Overlays
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Route information card
+                uiState.route?.let { route ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f)
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Text(
+                                text = "Route to Destination",
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            uiState.members.find { it.member.userId == viewModel.currentUserId }?.progress?.let { p ->
+                                Text(
+                                    text = "Your progress: ${String.format(Locale.getDefault(), "%.1f", p.progressDistanceMeters / 1000.0)} km (${(p.progressPercentage * 100).toInt()}%)",
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "${String.format(Locale.getDefault(), "%.1f", route.distanceMeters / 1000.0)} km",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(text = "•", style = MaterialTheme.typography.bodyMedium)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = formatDuration(route.durationSeconds),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+                        }
+                    }
+                } ?: run {
+                    // Show error or loading state for route
+                    if (uiState.routeRequestState == RouteRequestState.LOADING) {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f)
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text("Calculating route...", style = MaterialTheme.typography.bodyMedium)
+                            }
+                        }
+                    } else if (uiState.routeRequestState == RouteRequestState.ERROR) {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.9f)
+                            )
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Text(
+                                    text = "Route unavailable",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                                Text(
+                                    text = uiState.routeError ?: "Unable to calculate route.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Button(
+                                    onClick = { viewModel.retryRouteFetch() },
+                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                                    modifier = Modifier.align(Alignment.End),
+                                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                                ) {
+                                    Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Retry", style = MaterialTheme.typography.labelSmall)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Member Progress List
+                if (uiState.members.isNotEmpty()) {
+                    LazyRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 4.dp)
+                    ) {
+                        items(uiState.members) { memberState ->
+                            val progress = memberState.progress ?: return@items
+                            val isMe = memberState.member.userId == viewModel.currentUserId
+                            
+                            Card(
+                                modifier = Modifier.width(180.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
+                                ),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                            ) {
+                                Column(modifier = Modifier.padding(12.dp)) {
+                                    Text(
+                                        text = if (isMe) "You" else memberState.member.name,
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                        maxLines = 1,
+                                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                    )
+                                    
+                                    if (progress.isOffRoute) {
+                                        Text(
+                                            text = "Off route",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.error
+                                        )
+                                    } else {
+                                        Text(
+                                            text = "${String.format(Locale.getDefault(), "%.1f", progress.progressDistanceMeters / 1000.0)} km / ${String.format(Locale.getDefault(), "%.1f", (uiState.route?.distanceMeters ?: 0) / 1000.0)} km",
+                                            style = MaterialTheme.typography.bodySmall
+                                        )
+                                        
+                                        if (!isMe) {
+                                            val aheadBehindText = when {
+                                                progress.isNear -> "Near you"
+                                                progress.isAhead -> "${String.format(Locale.getDefault(), "%.1f", progress.aheadBehindDistanceMeters / 1000.0)} km ahead"
+                                                progress.isBehind -> "${String.format(Locale.getDefault(), "%.1f", progress.aheadBehindDistanceMeters / 1000.0)} km behind"
+                                                else -> ""
+                                            }
+                                            Text(
+                                                text = aheadBehindText,
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = if (progress.isAhead) Color(0xFF4CAF50) else if (progress.isBehind) Color.Gray else Color.Unspecified
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Tracking Status and Toggle
                 Card(
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(16.dp)
-                        .fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f)
+                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
                     ),
                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                 ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        Text(
-                            text = "Route to Destination",
-                            style = MaterialTheme.typography.titleSmall,
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                    Row(
+                        modifier = Modifier
+                            .padding(12.dp)
+                            .fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        val isTrackingThisTrip = uiState.trackingStatus == TrackingStatus.TRACKING && 
+                                                uiState.activeTrackingTripId == viewModel.tripId
+                        
                         Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(10.dp)
+                                    .background(
+                                        if (isTrackingThisTrip) Color(0xFF4CAF50) else Color.Gray,
+                                        shape = RoundedCornerShape(5.dp)
+                                    )
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
                             Text(
-                                text = "${String.format(Locale.getDefault(), "%.1f", route.distanceMeters / 1000.0)} km",
+                                text = if (isTrackingThisTrip) "Sharing active" else "Sharing inactive",
                                 style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                                fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
                             )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "•",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = formatDuration(route.durationSeconds),
-                                style = MaterialTheme.typography.bodyMedium
-                            )
+                        }
+
+                        Button(
+                            onClick = { viewModel.toggleTracking() },
+                            colors = if (isTrackingThisTrip) {
+                                ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                            } else {
+                                ButtonDefaults.buttonColors()
+                            },
+                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                        ) {
+                            if (isTrackingThisTrip) {
+                                Icon(Icons.Default.Stop, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Stop Sharing")
+                            } else {
+                                Text("Start Trip")
+                            }
                         }
                     }
                 }
             }
 
             uiState.error?.let { error ->
-                Text(
-                    text = error,
+                Card(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .padding(bottom = 80.dp),
-                    color = androidx.compose.ui.graphics.Color.Red
-                )
+                        .padding(bottom = 80.dp, start = 16.dp, end = 16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+                ) {
+                    Text(
+                        text = error,
+                        modifier = Modifier.padding(8.dp),
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
             }
         }
     }

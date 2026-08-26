@@ -1,0 +1,56 @@
+{
+  "project_info": {
+    "project_number": "378539559507",
+    "firebase_url": "https://shut-up-chat-default-rtdb.firebaseio.com",
+    "project_id": "shut-up-chat",
+    "storage_bucket": "shut-up-chat.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:378539559507:android:f7f46f85b4531614c854a6",
+        "android_client_info": {
+          "package_name": "com.chat.shutup"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "378539559507-jcirjc3br24eb639sdu9a4big9h0dh43.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.chat.shutup",
+            "certificate_hash": "595323a9dd079b4264132ce48c069549de29d714"
+          }
+        },
+        {
+          "client_id": "378539559507-p90kdneec1k82ofeoo3jomlvsgjkrle2.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.chat.shutup",
+            "certificate_hash": "627086e96621f49226c347035499571a5dbaeb18"
+          }
+        },
+        {
+          "client_id": "378539559507-6in68fb7nm570sm5ran9n07kj52a2d34.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAOEDVgm52iHBgIMKRKH8nVz1bKkUFsGQk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "378539559507-6in68fb7nm570sm5ran9n07kj52a2d34.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

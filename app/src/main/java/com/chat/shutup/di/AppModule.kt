@@ -11,13 +11,17 @@ import com.chat.shutup.data.remote.RoutesApi
 import com.chat.shutup.data.repository.AuthRepositoryImpl
 import com.chat.shutup.data.repository.ChatRepositoryImpl
 import com.chat.shutup.data.repository.DefaultLocationClient
+import com.chat.shutup.data.repository.FcmRepositoryImpl
+import com.chat.shutup.data.repository.PreferenceTrackingRepository
 import com.chat.shutup.data.repository.RouteRepositoryImpl
 import com.chat.shutup.data.repository.TripLocationRepositoryImpl
 import com.chat.shutup.data.repository.TripRepositoryImpl
 import com.chat.shutup.domain.repository.AuthRepository
 import com.chat.shutup.domain.repository.ChatRepository
+import com.chat.shutup.domain.repository.FcmRepository
 import com.chat.shutup.domain.repository.LocationClient
 import com.chat.shutup.domain.repository.RouteRepository
+import com.chat.shutup.domain.repository.TrackingRepository
 import com.chat.shutup.domain.repository.TripLocationRepository
 import com.chat.shutup.domain.repository.TripRepository
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -66,6 +70,18 @@ abstract class AppModule {
     abstract fun bindRouteRepository(
         routeRepositoryImpl: RouteRepositoryImpl
     ): RouteRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindTrackingRepository(
+        preferenceTrackingRepository: PreferenceTrackingRepository
+    ): TrackingRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindFcmRepository(
+        fcmRepositoryImpl: FcmRepositoryImpl
+    ): FcmRepository
 
     @Binds
     @Singleton
