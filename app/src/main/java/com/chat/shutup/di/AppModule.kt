@@ -5,14 +5,20 @@ import androidx.room.Room
 import com.chat.shutup.data.local.ChatDao
 import com.chat.shutup.data.local.ChatDatabase
 import com.chat.shutup.data.local.TripDao
+import com.chat.shutup.data.local.TripMemberDao
 import com.chat.shutup.data.remote.ChatApi
+import com.chat.shutup.data.remote.RoutesApi
 import com.chat.shutup.data.repository.AuthRepositoryImpl
 import com.chat.shutup.data.repository.ChatRepositoryImpl
 import com.chat.shutup.data.repository.DefaultLocationClient
+import com.chat.shutup.data.repository.RouteRepositoryImpl
+import com.chat.shutup.data.repository.TripLocationRepositoryImpl
 import com.chat.shutup.data.repository.TripRepositoryImpl
 import com.chat.shutup.domain.repository.AuthRepository
 import com.chat.shutup.domain.repository.ChatRepository
 import com.chat.shutup.domain.repository.LocationClient
+import com.chat.shutup.domain.repository.RouteRepository
+import com.chat.shutup.domain.repository.TripLocationRepository
 import com.chat.shutup.domain.repository.TripRepository
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
@@ -48,6 +54,18 @@ abstract class AppModule {
     abstract fun bindTripRepository(
         tripRepositoryImpl: TripRepositoryImpl
     ): TripRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindTripLocationRepository(
+        tripLocationRepositoryImpl: TripLocationRepositoryImpl
+    ): TripLocationRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindRouteRepository(
+        routeRepositoryImpl: RouteRepositoryImpl
+    ): RouteRepository
 
     @Binds
     @Singleton
@@ -98,6 +116,12 @@ abstract class AppModule {
 
         @Provides
         @Singleton
+        fun provideTripMemberDao(db: ChatDatabase): TripMemberDao {
+            return db.tripMemberDao
+        }
+
+        @Provides
+        @Singleton
         fun provideChatApi(): ChatApi {
             val contentType = "application/json".toMediaType()
             val json = Json { ignoreUnknownKeys = true }
@@ -106,6 +130,18 @@ abstract class AppModule {
                 .addConverterFactory(json.asConverterFactory(contentType))
                 .build()
                 .create(ChatApi::class.java)
+        }
+
+        @Provides
+        @Singleton
+        fun provideRoutesApi(): RoutesApi {
+            val contentType = "application/json".toMediaType()
+            val json = Json { ignoreUnknownKeys = true }
+            return Retrofit.Builder()
+                .baseUrl(RoutesApi.BASE_URL)
+                .addConverterFactory(json.asConverterFactory(contentType))
+                .build()
+                .create(RoutesApi::class.java)
         }
     }
 }

@@ -1,9 +1,13 @@
 package com.chat.shutup.feature.trip.presentation.screen
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AddLocation
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -23,6 +27,7 @@ import com.chat.shutup.feature.trip.presentation.viewmodel.CreateTripViewModel
 @Composable
 fun CreateTripScreen(
     onBackClick: () -> Unit,
+    onPickLocation: (Double, Double, String) -> Unit,
     onTripCreated: (String) -> Unit,
     viewModel: CreateTripViewModel = hiltViewModel()
 ) {
@@ -44,9 +49,10 @@ fun CreateTripScreen(
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
-                .padding(24.dp),
+                .padding(24.dp)
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.Top
         ) {
             if (uiState.createdTrip != null) {
                 TripCreatedSuccess(
@@ -56,9 +62,10 @@ fun CreateTripScreen(
                 )
             } else {
                 Text(
-                    text = "Name your adventure",
+                    text = "Plan your adventure",
                     style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(24.dp))
                 OutlinedTextField(
@@ -69,6 +76,52 @@ fun CreateTripScreen(
                     singleLine = true,
                     isError = uiState.error != null
                 )
+                
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                LocationSelectionSection(
+                    label = "START",
+                    location = uiState.origin,
+                    onSelectClick = {
+                        onPickLocation(
+                            uiState.origin?.latitude ?: 28.6139,
+                            uiState.origin?.longitude ?: 77.2090,
+                            "Origin"
+                        )
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                LocationSelectionSection(
+                    label = "DESTINATION",
+                    location = uiState.destination,
+                    onSelectClick = {
+                        onPickLocation(
+                            uiState.destination?.latitude ?: uiState.origin?.latitude ?: 28.6139,
+                            uiState.destination?.longitude ?: uiState.origin?.longitude ?: 77.2090,
+                            "Destination"
+                        )
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                Text("Travel Mode", style = MaterialTheme.typography.labelLarge, modifier = Modifier.fillMaxWidth())
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    com.chat.shutup.domain.model.TravelMode.entries.forEach { mode ->
+                        FilterChip(
+                            selected = uiState.travelMode == mode,
+                            onClick = { viewModel.onTravelModeChange(mode) },
+                            label = { Text(mode.name.lowercase().replaceFirstChar { it.uppercase() }) }
+                        )
+                    }
+                }
+
                 if (uiState.error != null) {
                     Text(
                         text = uiState.error!!,
@@ -88,6 +141,46 @@ fun CreateTripScreen(
                     } else {
                         Text("Create Trip")
                     }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun LocationSelectionSection(
+    label: String,
+    location: com.chat.shutup.domain.model.TripLocation?,
+    onSelectClick: () -> Unit
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(text = label, style = MaterialTheme.typography.labelLarge)
+        Spacer(modifier = Modifier.height(8.dp))
+        OutlinedCard(
+            modifier = Modifier.fillMaxWidth(),
+            onClick = onSelectClick
+        ) {
+            Row(
+                modifier = Modifier.padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = if (location != null) Icons.Default.LocationOn else Icons.Default.AddLocation,
+                    contentDescription = null,
+                    tint = if (location != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+                )
+                Spacer(modifier = Modifier.width(16.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = location?.address ?: "Not selected",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = if (location != null) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.outline,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    )
+                }
+                TextButton(onClick = onSelectClick) {
+                    Text(if (location == null) "Select" else "Change")
                 }
             }
         }

@@ -28,8 +28,14 @@ sealed interface Screen {
     data object CreateTrip : Screen
 
     @Serializable
+    data object JoinTrip : Screen
+
+    @Serializable
     data class TripDetails(val tripId: String) : Screen
 
     @Serializable
     data class TripMap(val tripId: String) : Screen
+
+    @Serializable
+    data class LocationPicker(val initialLat: Double, val initialLng: Double, val mode: String) : Screen
 }

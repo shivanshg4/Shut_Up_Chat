@@ -11,6 +11,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import android.Manifest
 import android.content.pm.PackageManager
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.rememberNavController
@@ -36,6 +38,7 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var agoraCallManager: AgoraCallManager
 
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -57,7 +60,8 @@ class MainActivity : ComponentActivity() {
 
                 val requiredPermissions = arrayOf(
                     Manifest.permission.RECORD_AUDIO,
-                    Manifest.permission.CAMERA
+                    Manifest.permission.CAMERA,
+                    Manifest.permission.POST_NOTIFICATIONS
                 )
 
                 fun checkAndRequestPermissions() {
