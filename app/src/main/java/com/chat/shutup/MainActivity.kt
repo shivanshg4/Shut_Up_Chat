@@ -84,7 +84,7 @@ class MainActivity : ComponentActivity() {
                 }
 
                 val startDestination = if (authRepository.currentUser != null) {
-                    Screen.ChatList
+                    Screen.Trips
                 } else {
                     Screen.Login
                 }

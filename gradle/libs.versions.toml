@@ -27,6 +27,9 @@ facebook = "18.3.0"
 firebaseBom = "34.17.0"
 googleServices = "4.5.0"
 firebaseCrashlytics = "3.0.7"
+zxing = "3.5.3"
+camerax = "1.4.1"
+barcodeScanning = "17.3.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -71,6 +74,11 @@ kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-
 coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }
 coil-network = { group = "io.coil-kt.coil3", name = "coil-network-okhttp", version.ref = "coil" }
 facebook-login = { group = "com.facebook.android", name = "facebook-login", version.ref = "facebook" }
+zxing = { group = "com.google.zxing", name = "core", version.ref = "zxing" }
+camera2 = { group = "androidx.camera", name = "camera-camera2", version.ref = "camerax" }
+cameraLifecycle = { group = "androidx.camera", name = "camera-lifecycle", version.ref = "camerax" }
+cameraView = { group = "androidx.camera", name = "camera-view", version.ref = "camerax" }
+mlkitBarcode = { group = "com.google.mlkit", name = "barcode-scanning", version.ref = "barcodeScanning" }
 
 
 [plugins]

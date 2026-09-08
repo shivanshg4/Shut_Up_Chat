@@ -21,6 +21,7 @@ interface TripRepository {
         role: TripRole,
         markerType: TripMarkerType = TripMarkerType.DEFAULT
     )
+    suspend fun leaveTrip(tripId: String, userId: String): Result<Unit>
     fun getTripMembers(tripId: String): Flow<List<TripMember>>
     suspend fun isUserMemberOfTrip(tripId: String, userId: String): Boolean
     suspend fun updateTripRoute(tripId: String, route: com.chat.shutup.domain.model.TripRoute)

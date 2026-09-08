@@ -37,7 +37,12 @@ class FirebaseLocationDataSource @Inject constructor(
             }
 
             override fun onCancelled(error: DatabaseError) {
-                close(error.toException())
+                if (error.code == DatabaseError.PERMISSION_DENIED) {
+                    android.util.Log.e("FirebaseLocationDataSource", "Permission denied for locations in trip: $tripId")
+                    close()
+                } else {
+                    close(error.toException())
+                }
             }
         }
         locationsRef.addValueEventListener(listener)

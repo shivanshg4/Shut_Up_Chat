@@ -13,6 +13,8 @@ import com.chat.shutup.feature.auth.presentation.signup.SignupScreen
 import com.chat.shutup.feature.chat.presentation.screen.ChatScreen
 import com.chat.shutup.feature.profile.presentation.ProfileScreen
 import com.chat.shutup.feature.search.presentation.UserSearchScreen
+import com.chat.shutup.ui.MainScreen
+import com.chat.shutup.feature.settings.presentation.screen.SettingsScreen
 import com.chat.shutup.feature.trip.presentation.screen.CreateTripScreen
 import com.chat.shutup.feature.trip.presentation.screen.JoinTripScreen
 import com.chat.shutup.feature.trip.presentation.screen.LocationPickerScreen
@@ -38,12 +40,12 @@ fun AppNavHost(
             LoginScreen(
                 onNavigateToSignup = { navController.navigate(Screen.Signup) },
                 onLoginSuccess = {
-                    navController.navigate(Screen.ChatList) {
+                    navController.navigate(Screen.Trips) {
                         popUpTo(Screen.Login) { inclusive = true }
                     }
                 },
                 onGuestLogin = {
-                    navController.navigate(Screen.ChatList) {
+                    navController.navigate(Screen.Trips) {
                         popUpTo(Screen.Login) { inclusive = true }
                     }
                 }
@@ -53,7 +55,7 @@ fun AppNavHost(
             SignupScreen(
                 onNavigateToLogin = { navController.navigate(Screen.Login) },
                 onSignupSuccess = {
-                    navController.navigate(Screen.ChatList) {
+                    navController.navigate(Screen.Trips) {
                         popUpTo(Screen.Signup) { inclusive = true }
                     }
                 }
@@ -64,14 +66,11 @@ fun AppNavHost(
                 onChatClick = { chatId ->
                     navController.navigate(Screen.Chat(chatId))
                 },
-                onTripsClick = {
-                    navController.navigate(Screen.Trips)
+                onBackClick = {
+                    navController.popBackStack()
                 },
                 onSearchClick = {
                     navController.navigate(Screen.Search)
-                },
-                onProfileClick = {
-                    navController.navigate(Screen.Profile)
                 }
             )
         }
@@ -102,13 +101,20 @@ fun AppNavHost(
             )
         }
         composable<Screen.Trips> {
-            TripsScreen(
-                onBackClick = { navController.popBackStack() },
-                onCreateTripClick = { navController.navigate(Screen.CreateTrip) },
-                onJoinTripClick = { navController.navigate(Screen.JoinTrip) },
-                onTripClick = { tripId -> navController.navigate(Screen.TripDetails(tripId)) }
+            MainScreen(
+                onNavigateToChatList = { navController.navigate(Screen.ChatList) },
+                onNavigateToCreateTrip = { navController.navigate(Screen.CreateTrip) },
+                onNavigateToJoinTrip = { navController.navigate(Screen.JoinTrip) },
+                onNavigateToTripDetails = { tripId -> navController.navigate(Screen.TripDetails(tripId)) },
+                onNavigateToSettings = { navController.navigate(Screen.Settings) },
+                onSignedOut = {
+                    navController.navigate(Screen.Login) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
             )
         }
+        // Screen.Settings is now handled within MainScreen
         composable<Screen.CreateTrip> { backStackEntry ->
             // Use the backStackEntry as the ViewModelStoreOwner to persist CreateTripViewModel
             // while navigating to the LocationPicker and back

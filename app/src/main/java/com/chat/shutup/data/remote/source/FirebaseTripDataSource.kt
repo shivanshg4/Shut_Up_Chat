@@ -47,6 +47,10 @@ class FirebaseTripDataSource @Inject constructor(
         tripsRef.child(tripId).child("members").child(member.userId).setValue(member).await()
     }
 
+    suspend fun removeMember(tripId: String, userId: String) {
+        tripsRef.child(tripId).child("members").child(userId).removeValue().await()
+    }
+
     suspend fun updateTripRoute(tripId: String, route: FirebaseTripRouteDto) {
         tripsRef.child(tripId).child("route").setValue(route).await()
     }
@@ -60,7 +64,12 @@ class FirebaseTripDataSource @Inject constructor(
             }
 
             override fun onCancelled(error: DatabaseError) {
-                close(error.toException())
+                if (error.code == DatabaseError.PERMISSION_DENIED) {
+                    android.util.Log.e("FirebaseTripDataSource", "Permission denied for members in trip: $tripId")
+                    close()
+                } else {
+                    close(error.toException())
+                }
             }
         }
         membersRef.addValueEventListener(listener)

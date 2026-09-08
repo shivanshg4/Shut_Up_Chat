@@ -1,13 +1,14 @@
 package com.chat.shutup.feature.trip.presentation.screen
 
-import android.graphics.drawable.Icon
-import android.location.Geocoder
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.input.TextFieldLineLimits
-import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
@@ -15,38 +16,15 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.chat.shutup.domain.model.TripLocation
 import com.chat.shutup.feature.trip.presentation.viewmodel.LocationPickerViewModel
+import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.rememberCameraPositionState
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import java.util.*
-import androidx.compose.runtime.collectAsState
-import androidx.lifecycle.viewmodel.compose.viewModel
-
-/*@Preview(showSystemUi = true, showBackground = true)
-@Composable
-fun LocationPickerScreenPreview() {
-
-    val DELHI = LatLng(28.6139, 77.2090)
-    LocationPickerScreen(
-        DELHI.latitude,
-        DELHI.longitude,
-        mode = "Car",
-        onLocationConfirmed = {},
-        onBackClick = {},
-        viewModel = hiltViewModel<LocationPickerViewModel>()
-    )
-}*/
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,29 +36,27 @@ fun LocationPickerScreen(
     onBackClick: () -> Unit,
     viewModel: LocationPickerViewModel
 ) {
-    val context = LocalContext.current
+    val uiState by viewModel.uiState.collectAsState()
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(LatLng(initialLat, initialLng), 15f)
     }
 
-    var address by remember { mutableStateOf("Searching...") }
-    val geocoder = remember { Geocoder(context, Locale.getDefault()) }
-
+    // Effect to update address when map stops moving
     LaunchedEffect(cameraPositionState.isMoving) {
         if (!cameraPositionState.isMoving) {
             val target = cameraPositionState.position.target
-            withContext(Dispatchers.IO) {
-                try {
-                    val addresses = geocoder.getFromLocation(target.latitude, target.longitude, 1)
-                    val result = addresses?.firstOrNull()?.getAddressLine(0) ?: "Unknown Location"
-                    withContext(Dispatchers.Main) {
-                        address = result
-                    }
-                } catch (e: Exception) {
-                    withContext(Dispatchers.Main) {
-                        address = "Selected Location"
-                    }
-                }
+            viewModel.reverseGeocode(target.latitude, target.longitude)
+        }
+    }
+
+    // Effect to move camera when a location is selected from search
+    LaunchedEffect(uiState.selectedLocation) {
+        uiState.selectedLocation?.let { location ->
+            val target = LatLng(location.latitude, location.longitude)
+            if (cameraPositionState.position.target != target) {
+                cameraPositionState.animate(
+                    CameraUpdateFactory.newLatLngZoom(target, 15f)
+                )
             }
         }
     }
@@ -102,21 +78,10 @@ fun LocationPickerScreen(
                 .padding(padding)
                 .fillMaxSize()
         ) {
-
             GoogleMap(
                 modifier = Modifier.fillMaxSize(),
                 cameraPositionState = cameraPositionState
             )
-
-            Card(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = 16.dp, start = 16.dp, end = 16.dp)
-                    .fillMaxWidth(),
-                shape = RoundedCornerShape(6.dp)
-            ) {
-                StatefulSearchView(viewModel = viewModel)
-            }
 
             // Center Pin
             Icon(
@@ -129,16 +94,83 @@ fun LocationPickerScreen(
                 tint = MaterialTheme.colorScheme.primary
             )
 
+            // Search Overlay
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                    .align(Alignment.TopCenter)
+            ) {
+                OutlinedTextField(
+                    value = uiState.query,
+                    onValueChange = { viewModel.onQueryChange(it) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp)),
+                    placeholder = { Text("Search for a location") },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                    trailingIcon = {
+                        if (uiState.query.isNotEmpty()) {
+                            IconButton(onClick = { viewModel.onQueryChange("") }) {
+                                Icon(Icons.Default.Close, contentDescription = "Clear")
+                            }
+                        }
+                    },
+                    singleLine = true,
+                    shape = RoundedCornerShape(8.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                    )
+                )
+
+                if (uiState.isSearching) {
+                    LinearProgressIndicator(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 4.dp)
+                    )
+                }
+
+                if (uiState.searchResults.isNotEmpty()) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                    ) {
+                        LazyColumn {
+                            items(uiState.searchResults) { location ->
+                                ListItem(
+                                    headlineContent = { Text(location.address) },
+                                    modifier = Modifier.clickable {
+                                        viewModel.onLocationSelected(location)
+                                    },
+                                    leadingContent = {
+                                        Icon(Icons.Default.LocationOn, contentDescription = null)
+                                    }
+                                )
+                                HorizontalDivider()
+                            }
+                        }
+                    }
+                } else if (uiState.query.length >= 3 && !uiState.isSearching && uiState.searchResults.isEmpty()) {
+                     // No results feedback could go here
+                }
+            }
+
+            // Bottom Confirmation Card
             Card(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(16.dp)
-                    .fillMaxWidth()
+                    .fillMaxWidth(),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(text = "Selected Location", style = MaterialTheme.typography.labelMedium)
                     Text(
-                        text = address,
+                        text = uiState.selectedLocation?.address ?: "Select a location on map",
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Bold,
                         maxLines = 2
@@ -146,16 +178,12 @@ fun LocationPickerScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(
                         onClick = {
-                            val target = cameraPositionState.position.target
-                            onLocationConfirmed(
-                                TripLocation(
-                                    latitude = target.latitude,
-                                    longitude = target.longitude,
-                                    address = address
-                                )
-                            )
+                            uiState.selectedLocation?.let {
+                                onLocationConfirmed(it)
+                            }
                         },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = uiState.selectedLocation != null
                     ) {
                         Text("Confirm Location")
                     }
@@ -163,43 +191,4 @@ fun LocationPickerScreen(
             }
         }
     }
-}
-
-// 1. STATEFUL WRAPPER: Use this in your actual app screens
-@Composable
-fun StatefulSearchView(
-    viewModel: LocationPickerViewModel = hiltViewModel()
-) {
-    val uiState by viewModel.uiState.collectAsState()
-    SearchView(state = uiState)
-}
-
-// 2. STATELESS VIEW: Pure UI, completely safe for previews
-@Composable
-fun SearchView(
-    state: TextFieldState,
-    modifier: Modifier = Modifier
-) {
-    TextField(
-        state = state,
-        modifier = modifier
-            .fillMaxWidth(),
-        colors = TextFieldDefaults.colors(
-            focusedContainerColor = Color.Transparent,
-            unfocusedContainerColor = Color.Transparent,
-            focusedIndicatorColor = Color.Transparent,
-            unfocusedIndicatorColor = Color.Transparent
-        ),
-        trailingIcon = { Icon(imageVector = Icons.Default.Search, contentDescription = "Search") },
-        label = { Text("Search location") },
-        lineLimits = TextFieldLineLimits.SingleLine
-    )
-}
-
-// 3. PREVIEW: Mock the state instantly without Hilt
-@Preview(showBackground = true)
-@Composable
-fun SearchViewPreview() {
-    // Simply pass a mock TextFieldState directly
-    SearchView(state = TextFieldState())
 }

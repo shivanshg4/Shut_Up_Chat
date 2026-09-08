@@ -7,7 +7,9 @@ import com.chat.shutup.domain.model.Trip
 import com.chat.shutup.domain.model.TripLocation
 import com.chat.shutup.domain.model.TripMember
 import com.chat.shutup.domain.model.TripRole
+import com.chat.shutup.domain.model.TripMarkerType
 import com.chat.shutup.domain.repository.AuthRepository
+import com.chat.shutup.domain.repository.ChatRepository
 import com.chat.shutup.domain.repository.TripRepository
 import com.chat.shutup.feature.trip.presentation.state.CreateTripUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -21,7 +23,8 @@ import javax.inject.Inject
 @HiltViewModel
 class CreateTripViewModel @Inject constructor(
     private val tripRepository: TripRepository,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val chatRepository: ChatRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CreateTripUiState())
@@ -72,25 +75,29 @@ class CreateTripViewModel @Inject constructor(
 
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
-            val user = authRepository.currentUser
-            if (user == null) {
+            val firebaseUser = authRepository.currentUser
+            if (firebaseUser == null) {
                 _uiState.update { it.copy(isLoading = false, error = "User not authenticated") }
                 return@launch
             }
 
+            // Fetch full domain User object
+            val user = chatRepository.getUserProfile(firebaseUser.uid).getOrNull()
+
             val trip = Trip(
                 id = state.tripId,
                 name = state.tripName.trim(),
-                creatorId = user.uid,
+                creatorId = firebaseUser.uid,
                 inviteCode = state.inviteCode,
                 origin = state.origin,
                 destination = state.destination,
                 travelMode = state.travelMode,
                 members = listOf(
                     TripMember(
-                        userId = user.uid,
-                        name = user.displayName ?: "Creator",
-                        role = TripRole.CREATOR
+                        userId = firebaseUser.uid,
+                        name = user?.nickname ?: user?.name ?: firebaseUser.displayName ?: "Creator",
+                        role = TripRole.CREATOR,
+                        markerType = user?.favoriteVehicle ?: TripMarkerType.DEFAULT
                     )
                 )
             )

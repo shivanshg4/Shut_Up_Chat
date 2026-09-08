@@ -12,9 +12,13 @@ import com.chat.shutup.data.repository.AuthRepositoryImpl
 import com.chat.shutup.data.repository.ChatRepositoryImpl
 import com.chat.shutup.data.repository.DefaultLocationClient
 import com.chat.shutup.data.repository.FcmRepositoryImpl
+import com.chat.shutup.data.repository.LocationSearchRepositoryImpl
+import com.chat.shutup.domain.repository.LocationSearchRepository
 import com.chat.shutup.data.repository.PreferenceTrackingRepository
 import com.chat.shutup.data.repository.RouteRepositoryImpl
+import com.chat.shutup.data.repository.TripChatRepositoryImpl
 import com.chat.shutup.data.repository.TripLocationRepositoryImpl
+import com.chat.shutup.data.repository.TripPreferencesRepositoryImpl
 import com.chat.shutup.data.repository.TripRepositoryImpl
 import com.chat.shutup.domain.repository.AuthRepository
 import com.chat.shutup.domain.repository.ChatRepository
@@ -22,8 +26,11 @@ import com.chat.shutup.domain.repository.FcmRepository
 import com.chat.shutup.domain.repository.LocationClient
 import com.chat.shutup.domain.repository.RouteRepository
 import com.chat.shutup.domain.repository.TrackingRepository
+import com.chat.shutup.domain.repository.TripChatRepository
 import com.chat.shutup.domain.repository.TripLocationRepository
+import com.chat.shutup.domain.repository.TripPreferencesRepository
 import com.chat.shutup.domain.repository.TripRepository
+import com.chat.shutup.feature.trip.presentation.util.VehicleSpriteProvider
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import dagger.Binds
@@ -61,6 +68,18 @@ abstract class AppModule {
 
     @Binds
     @Singleton
+    abstract fun bindTripChatRepository(
+        tripChatRepositoryImpl: TripChatRepositoryImpl
+    ): TripChatRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindTripPreferencesRepository(
+        tripPreferencesRepositoryImpl: TripPreferencesRepositoryImpl
+    ): TripPreferencesRepository
+
+    @Binds
+    @Singleton
     abstract fun bindTripLocationRepository(
         tripLocationRepositoryImpl: TripLocationRepositoryImpl
     ): TripLocationRepository
@@ -70,6 +89,12 @@ abstract class AppModule {
     abstract fun bindRouteRepository(
         routeRepositoryImpl: RouteRepositoryImpl
     ): RouteRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindLocationSearchRepository(
+        locationSearchRepositoryImpl: LocationSearchRepositoryImpl
+    ): LocationSearchRepository
 
     @Binds
     @Singleton
@@ -90,6 +115,12 @@ abstract class AppModule {
     ): LocationClient
 
     companion object {
+        @Provides
+        @Singleton
+        fun provideVehicleSpriteProvider(app: Application): VehicleSpriteProvider {
+            return VehicleSpriteProvider(app)
+        }
+
         @Provides
         @Singleton
         fun provideFusedLocationProviderClient(app: Application): FusedLocationProviderClient {

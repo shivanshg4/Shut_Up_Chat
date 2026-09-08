@@ -19,9 +19,15 @@ import com.chat.shutup.domain.model.Trip
 import com.chat.shutup.domain.model.TripMarkerType
 import com.chat.shutup.domain.util.RouteProgressCalculator
 import com.chat.shutup.feature.trip.data.service.TripLocationForegroundService
+import com.chat.shutup.feature.trip.presentation.util.VehicleSpriteProvider
 import com.chat.shutup.feature.trip.presentation.state.MemberLocationState
 import com.chat.shutup.feature.trip.presentation.state.RouteRequestState
 import com.chat.shutup.feature.trip.presentation.state.TripMapUiState
+import com.chat.shutup.domain.repository.TripChatRepository
+import com.chat.shutup.domain.repository.TripPreferencesRepository
+import com.chat.shutup.feature.chat.domain.model.Message
+import com.chat.shutup.feature.chat.domain.model.MessageStatus
+import com.chat.shutup.feature.chat.domain.model.MessageType
 import com.chat.shutup.ui.navigation.Screen
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -35,9 +41,12 @@ class TripMapViewModel @Inject constructor(
     private val locationClient: LocationClient,
     private val tripLocationRepository: TripLocationRepository,
     private val tripRepository: TripRepository,
+    private val tripChatRepository: TripChatRepository,
+    private val tripPreferencesRepository: TripPreferencesRepository,
     private val routeRepository: RouteRepository,
     private val authRepository: AuthRepository,
     private val trackingRepository: TrackingRepository,
+    val spriteProvider: VehicleSpriteProvider,
     @ApplicationContext private val context: Context,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
@@ -56,6 +65,7 @@ class TripMapViewModel @Inject constructor(
     private var locationJob: Job? = null
     private var membersJob: Job? = null
     private var tripJob: Job? = null
+    private var chatJob: Job? = null
     private val offRouteStates = mutableMapOf<String, Boolean>()
 
     init {
@@ -63,6 +73,53 @@ class TripMapViewModel @Inject constructor(
             observeMembersAndLocations()
             observeTrip()
             observeTrackingState()
+            observeChat()
+        }
+    }
+
+    private fun observeChat() {
+        chatJob?.cancel()
+        val lastRead = tripPreferencesRepository.getLastReadChatTimestamp(tripId)
+        _uiState.update { it.copy(lastReadTimestamp = lastRead) }
+
+        chatJob = tripChatRepository.getMessages(tripId)
+            .onEach { messages ->
+                _uiState.update { state ->
+                    val unread = messages.count { it.timestamp > state.lastReadTimestamp && it.senderId != currentUserId }
+                    state.copy(
+                        chatMessages = messages,
+                        unreadCount = unread
+                    )
+                }
+            }
+            .launchIn(viewModelScope)
+    }
+
+    fun onChatExpand() {
+        val now = System.currentTimeMillis()
+        tripPreferencesRepository.setLastReadChatTimestamp(tripId, now)
+        _uiState.update { it.copy(unreadCount = 0, lastReadTimestamp = now) }
+    }
+
+    fun onSendMessage(text: String) {
+        if (text.isBlank() || currentUserId == null) return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isChatSending = true) }
+            val message = Message(
+                text = text.trim(),
+                senderId = currentUserId,
+                timestamp = System.currentTimeMillis(),
+                status = MessageStatus.SENT,
+                type = MessageType.TEXT
+            )
+            tripChatRepository.sendMessage(tripId, message)
+                .onSuccess {
+                    _uiState.update { it.copy(isChatSending = false) }
+                }
+                .onFailure { e ->
+                    _uiState.update { it.copy(isChatSending = false, error = "Failed to send message: ${e.message}") }
+                }
         }
     }
 
@@ -150,6 +207,7 @@ class TripMapViewModel @Inject constructor(
             tripLocationRepository.observeMemberLocations(tripId),
             _uiState.map { it.route }.distinctUntilChanged()
         ) { members, locations, route ->
+            Log.d("TripVehicleDebug", "Observer emit: members=${members.size}, locations=${locations.keys}")
             // First, calculate current user's progress to compare others against
             val currentUserLocation = locations[currentUserId]
             val currentUserProgress = if (currentUserLocation != null && route != null) {
@@ -238,7 +296,7 @@ class TripMapViewModel @Inject constructor(
         tripJob = tripRepository.getTrip(tripId)
             .onEach { trip ->
                 trip?.let { t ->
-                    _uiState.update { it.copy(route = t.route) }
+                    _uiState.update { it.copy(trip = t, route = t.route) }
                     
                     // Trigger fetch only if route is missing and we haven't tried/failed yet
                     if (t.origin != null && t.destination != null && 
@@ -309,6 +367,7 @@ class TripMapViewModel @Inject constructor(
         super.onCleared()
         membersJob?.cancel()
         tripJob?.cancel()
+        chatJob?.cancel()
     }
 
     companion object {

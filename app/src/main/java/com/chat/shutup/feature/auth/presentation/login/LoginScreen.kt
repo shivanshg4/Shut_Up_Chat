@@ -1,27 +1,33 @@
 package com.chat.shutup.feature.auth.presentation.login
 
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Facebook
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.chat.shutup.ui.components.PrimaryButton
-import com.chat.shutup.ui.components.SocialButton
+import com.chat.shutup.R
+import com.chat.shutup.feature.trip.presentation.screen.components.HomeEnvironment
+import com.chat.shutup.ui.components.ShutUpPrimaryButton
+import com.chat.shutup.ui.components.ShutUpSecondaryButton
+import com.chat.shutup.ui.components.ShutUpTextField
 import com.chat.shutup.ui.theme.ShutUpChatTheme
 import com.facebook.CallbackManager
 import com.facebook.FacebookCallback
@@ -53,13 +59,9 @@ fun LoginScreen(
                     viewModel.onFacebookSignIn(result.accessToken.token)
                 }
 
-                override fun onCancel() {
-                    // Handle cancel
-                }
+                override fun onCancel() {}
 
-                override fun onError(error: FacebookException) {
-                    // Handle error
-                }
+                override fun onError(error: FacebookException) {}
             }
         )
         onDispose {
@@ -76,11 +78,7 @@ fun LoginScreen(
     LoginContent(
         uiState = uiState,
         onNavigateToSignup = onNavigateToSignup,
-        onLogin = { email, password -> viewModel.onEmailSignIn(email, password) },
         onGoogleSignIn = { viewModel.onGoogleSignIn(context) },
-        onFacebookSignIn = {
-            loginLauncher.launch(listOf("email", "public_profile"))
-        },
         onGuestSignIn = { viewModel.onGuestSignIn() },
         onClearError = { viewModel.clearError() }
     )
@@ -90,130 +88,103 @@ fun LoginScreen(
 fun LoginContent(
     uiState: LoginUiState,
     onNavigateToSignup: () -> Unit,
-    onLogin: (String, String) -> Unit,
     onGoogleSignIn: () -> Unit,
-    onFacebookSignIn: () -> Unit,
     onGuestSignIn: () -> Unit,
     onClearError: () -> Unit
 ) {
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        // 1. Nature/travel visual area (Matching Home Screen)
+        HomeEnvironment(
+            modifier = Modifier.fillMaxWidth().height(360.dp),
+            isAnimated = true,
+            isInteractive = false
+        )
 
-    Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+                .statusBarsPadding()
+                .padding(horizontal = 32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Spacer(modifier = Modifier.height(280.dp))
+
+            // 2. ShutUp Trips Together
+            Image(
+                painter = painterResource(id = R.drawable.logo),
+                contentDescription = "ShutUp Logo",
+                modifier = Modifier.size(100.dp)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Welcome Back",
-                style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
+                text = "ShutUp",
+                style = MaterialTheme.typography.displaySmall,
+                color = MaterialTheme.colorScheme.onBackground,
+                fontWeight = FontWeight.Black
+            )
+            Text(
+                text = "Trips Together",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Normal,
+                modifier = Modifier.offset(y = (-4).dp)
             )
 
+            Spacer(modifier = Modifier.height(48.dp))
+
+            // 3. Welcome / greeting
             Text(
-                text = "Sign in to continue your conversations",
-                style = MaterialTheme.typography.bodyMedium,
+                text = "Discover the world with your favorite people.",
+                style = MaterialTheme.typography.headlineSmall,
+                textAlign = TextAlign.Center,
+                fontWeight = FontWeight.Bold,
+                lineHeight = 32.sp
+            )
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            Text(
+                text = "Share live locations, chat in real-time, and never lose your group again.",
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            // 4. [ Continue with Google ]
+            ShutUpPrimaryButton(
+                text = "Continue with Google",
+                onClick = onGoogleSignIn,
+                enabled = !uiState.isLoading,
+                containerColor = MaterialTheme.colorScheme.primary
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            ShutUpSecondaryButton(
+                text = "Continue as Guest",
+                onClick = onGuestSignIn,
+                enabled = !uiState.isLoading,
+                icon = Icons.Default.Person
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // 5. small supporting text
+            Text(
+                text = "By continuing, you agree to our Terms and Privacy Policy.",
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = 8.dp, bottom = 32.dp)
+                modifier = Modifier.padding(bottom = 32.dp)
             )
-
-            OutlinedTextField(
-                value = email,
-                onValueChange = { email = it },
-                label = { Text("Email") },
-                leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
-                modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                singleLine = true
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
-                label = { Text("Password") },
-                leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
-                modifier = Modifier.fillMaxWidth(),
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                singleLine = true
-            )
-
-            TextButton(
-                onClick = { /* Forgot password logic */ },
-                modifier = Modifier.align(Alignment.End)
-            ) {
-                Text("Forgot Password?")
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            PrimaryButton(
-                text = "Login",
-                onClick = { onLogin(email, password) },
-                enabled = !uiState.isLoading && email.isNotBlank() && password.isNotBlank()
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(vertical = 16.dp)
-            ) {
-                HorizontalDivider(modifier = Modifier.weight(1f))
-                Text(
-                    text = " OR ",
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(horizontal = 8.dp)
-                )
-                HorizontalDivider(modifier = Modifier.weight(1f))
-            }
-
-            SocialButton(
-                text = "Continue with Google",
-                icon = null,
-                onClick = onGoogleSignIn
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            SocialButton(
-                text = "Continue with Facebook",
-                icon = Icons.Default.Facebook,
-                onClick = onFacebookSignIn,
-                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            SocialButton(
-                text = "Continue as Guest",
-                icon = Icons.Default.Person,
-                onClick = onGuestSignIn
-            )
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(text = "Don't have an account? ")
-                TextButton(onClick = onNavigateToSignup) {
-                    Text(text = "Sign Up", fontWeight = FontWeight.Bold)
-                }
-            }
         }
 
         if (uiState.isLoading) {
             CircularProgressIndicator(
-                modifier = Modifier.align(Alignment.Center)
+                modifier = Modifier.align(Alignment.Center),
+                color = MaterialTheme.colorScheme.primary
             )
         }
 
@@ -241,9 +212,7 @@ fun LoginScreenPreview() {
         LoginContent(
             uiState = LoginUiState(),
             onNavigateToSignup = {},
-            onLogin = { _, _ -> },
             onGoogleSignIn = {},
-            onFacebookSignIn = {},
             onGuestSignIn = {},
             onClearError = {}
         )

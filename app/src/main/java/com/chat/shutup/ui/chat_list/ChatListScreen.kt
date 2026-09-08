@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Person
@@ -21,6 +22,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.chat.shutup.domain.model.Chat
 import com.chat.shutup.domain.model.User
 import com.chat.shutup.ui.components.Avatar
+import com.chat.shutup.ui.components.ShutUpTopBar
 import com.chat.shutup.ui.theme.ShutUpChatTheme
 import java.text.SimpleDateFormat
 import java.util.*
@@ -30,25 +32,19 @@ import java.util.*
 fun ChatListScreen(
     viewModel: ChatListViewModel = hiltViewModel(),
     onChatClick: (String) -> Unit,
-    onTripsClick: () -> Unit = {},
-    onSearchClick: () -> Unit,
-    onProfileClick: () -> Unit
+    onBackClick: () -> Unit = {},
+    onSearchClick: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Chats") },
+            ShutUpTopBar(
+                title = "Messages",
+                onBackClick = onBackClick,
                 actions = {
-                    IconButton(onClick = onTripsClick) {
-                        Icon(Icons.Default.Groups, contentDescription = "Trips")
-                    }
                     IconButton(onClick = onSearchClick) {
                         Icon(Icons.Default.Search, contentDescription = "Search")
-                    }
-                    IconButton(onClick = onProfileClick) {
-                        Avatar(imageUrl = null, name = "Me", size = 32.dp)
                     }
                 }
             )

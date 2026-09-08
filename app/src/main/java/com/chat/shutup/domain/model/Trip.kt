@@ -41,7 +41,8 @@ enum class TripMarkerType {
     TRUCK,
     MOTORCYCLE,
     BICYCLE,
-    ANIMAL
+    ANIMAL,
+    SCOOTER
 }
 
 enum class TripRole {

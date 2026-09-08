@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.LocalShipping
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.TwoWheeler
+import androidx.compose.material.icons.filled.ElectricScooter
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -36,6 +37,7 @@ object TripMarkerAssetProvider {
             TripMarkerType.MOTORCYCLE -> Icons.Default.TwoWheeler
             TripMarkerType.BICYCLE -> Icons.Default.DirectionsBike
             TripMarkerType.ANIMAL -> Icons.Default.Agriculture
+            TripMarkerType.SCOOTER -> Icons.Default.ElectricScooter
         }
     }
 
@@ -67,6 +69,7 @@ object TripMarkerAssetProvider {
                     TripMarkerType.MOTORCYCLE -> R.drawable.ic_motorcycle
                     TripMarkerType.BICYCLE -> R.drawable.ic_bicycle
                     TripMarkerType.ANIMAL -> R.drawable.ic_animal
+                    TripMarkerType.SCOOTER -> R.drawable.ic_scooter
                     else -> null
                 }
                 

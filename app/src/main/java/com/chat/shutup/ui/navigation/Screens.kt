@@ -25,6 +25,9 @@ sealed interface Screen {
     data object Trips : Screen
 
     @Serializable
+    data object Settings : Screen
+
+    @Serializable
     data object CreateTrip : Screen
 
     @Serializable

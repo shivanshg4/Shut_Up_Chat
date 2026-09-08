@@ -1,9 +1,8 @@
 package com.chat.shutup.feature.trip.presentation.screen
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -13,11 +12,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.chat.shutup.feature.trip.presentation.screen.components.QRScanner
 import com.chat.shutup.feature.trip.presentation.viewmodel.JoinTripViewModel
+import com.chat.shutup.ui.components.ShutUpPrimaryButton
+import com.chat.shutup.ui.components.ShutUpSecondaryButton
+import com.chat.shutup.ui.components.ShutUpTextField
+import com.chat.shutup.ui.components.ShutUpTopBar
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun JoinTripScreen(
     onBackClick: () -> Unit,
@@ -32,16 +36,81 @@ fun JoinTripScreen(
         }
     }
 
+    if (uiState.isScanning) {
+        Scaffold(
+            topBar = {
+                ShutUpTopBar(title = "Scan QR Code", onBackClick = { viewModel.stopScanning() })
+            }
+        ) { padding ->
+            Box(modifier = Modifier.padding(padding).fillMaxSize()) {
+                QRScanner(
+                    onCodeScanned = { viewModel.onCodeScanned(it) },
+                    onDismiss = { viewModel.stopScanning() }
+                )
+                
+                Surface(
+                    modifier = Modifier.align(Alignment.BottomCenter).padding(32.dp),
+                    color = Color.Black.copy(alpha = 0.6f),
+                    shape = MaterialTheme.shapes.medium
+                ) {
+                    Text(
+                        text = "Center the QR code in the frame",
+                        color = Color.White,
+                        modifier = Modifier.padding(16.dp),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
+        }
+        return
+    }
+
+    if (uiState.showJoinConfirmation && uiState.scannedTrip != null) {
+        val trip = uiState.scannedTrip!!
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissConfirmation() },
+            title = { Text("Join Trip?") },
+            text = {
+                Column {
+                    Text(
+                        text = trip.name,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(text = "${trip.origin?.address} → ${trip.destination?.address}")
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "${trip.members.size} members",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { 
+                        if (uiState.isAlreadyMember) {
+                            onTripJoined(trip.id)
+                        } else {
+                            viewModel.confirmJoin() 
+                        }
+                    }
+                ) {
+                    Text(if (uiState.isAlreadyMember) "Open Trip" else "Join Trip")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.dismissConfirmation() }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Join Trip") },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                }
-            )
+            ShutUpTopBar(title = "Join Trip", onBackClick = onBackClick)
         }
     ) { padding ->
         Column(
@@ -52,6 +121,7 @@ fun JoinTripScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top
         ) {
+            Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = "Enter invite code",
                 style = MaterialTheme.typography.headlineSmall,
@@ -61,21 +131,18 @@ fun JoinTripScreen(
             Text(
                 text = "Ask your friend for the 6-character code of their trip.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
             )
             Spacer(modifier = Modifier.height(32.dp))
             
-            OutlinedTextField(
+            ShutUpTextField(
                 value = uiState.inviteCode,
                 onValueChange = { viewModel.onInviteCodeChange(it.uppercase()) },
-                label = { Text("Invite Code") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                isError = uiState.error != null,
-                placeholder = { Text("e.g. ABC123") }
+                label = "Invite Code"
             )
             
-            if (uiState.error != null) {
+            if (uiState.error != null && !uiState.showJoinConfirmation) {
                 Text(
                     text = uiState.error!!,
                     color = MaterialTheme.colorScheme.error,
@@ -86,17 +153,28 @@ fun JoinTripScreen(
             
             Spacer(modifier = Modifier.height(32.dp))
             
-            Button(
+            ShutUpPrimaryButton(
+                text = "Join Trip",
                 onClick = { viewModel.onJoinTrip() },
-                modifier = Modifier.fillMaxWidth(),
                 enabled = !uiState.isLoading
-            ) {
-                if (uiState.isLoading) {
-                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
-                } else {
-                    Text("Join Trip")
-                }
+            )
+
+            if (uiState.isLoading) {
+                Spacer(modifier = Modifier.height(16.dp))
+                CircularProgressIndicator()
             }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(text = "OR", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            ShutUpSecondaryButton(
+                text = "Scan QR Code",
+                onClick = { viewModel.startScanning() },
+                icon = Icons.Default.QrCodeScanner
+            )
         }
     }
 }

@@ -16,7 +16,9 @@ import com.chat.shutup.domain.model.TripRole
 import com.chat.shutup.domain.repository.TripRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -155,6 +157,41 @@ class TripRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun leaveTrip(tripId: String, userId: String): Result<Unit> = runCatching {
+        // Get member info before deleting for notification
+        val members = tripMemberDao.getMembersForTrip(tripId).first()
+        val me = members.find { it.userId == userId }
+        val myName = me?.name ?: "A member"
+        
+        val tripEntity = tripDao.getTripById(tripId).first()
+        val tripName = tripEntity?.name ?: ""
+
+        // 1. Remove from Firebase
+        firebaseDataSource.removeMember(tripId, userId)
+        
+        // 2. Remove from local Room
+        tripMemberDao.deleteMember(tripId, userId)
+        
+        // 3. Delete trip locally if I'm not the creator
+        if (tripEntity != null && tripEntity.creatorId != userId) {
+            tripDao.deleteTrip(tripId)
+        }
+        
+        // 4. Push Event
+        pushTripEvent(
+            tripId,
+            com.chat.shutup.domain.model.TripNotificationData(
+                type = com.chat.shutup.domain.model.TripNotificationType.MEMBER_LEFT,
+                tripId = tripId,
+                tripName = tripName,
+                actorUserId = userId,
+                actorName = myName,
+                title = "Member Left",
+                body = "$myName has left the trip"
+            )
+        )
+    }
+
     override fun getTripMembers(tripId: String): Flow<List<TripMember>> {
         return firebaseDataSource.observeTripMembers(tripId)
             .map { dtos -> dtos.map { it.toTripMember() } }
@@ -163,6 +200,10 @@ class TripRepositoryImpl @Inject constructor(
                 members.forEach { member ->
                     tripMemberDao.insertMember(member.toTripMemberEntity(tripId))
                 }
+            }
+            .catch { e ->
+                android.util.Log.e("TripRepo", "Error observing members: ${e.message}")
+                emit(emptyList())
             }
     }
 

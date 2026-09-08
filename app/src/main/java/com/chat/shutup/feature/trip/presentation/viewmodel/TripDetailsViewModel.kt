@@ -10,6 +10,7 @@ import com.chat.shutup.domain.repository.AuthRepository
 import com.chat.shutup.domain.repository.TrackingRepository
 import com.chat.shutup.domain.repository.TrackingStatus
 import com.chat.shutup.domain.repository.TripRepository
+import com.chat.shutup.domain.usecase.LeaveTripUseCase
 import com.chat.shutup.feature.trip.data.service.TripLocationForegroundService
 import com.chat.shutup.feature.trip.presentation.state.TripDetailsUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -23,6 +24,7 @@ class TripDetailsViewModel @Inject constructor(
     private val tripRepository: TripRepository,
     private val authRepository: AuthRepository,
     private val trackingRepository: TrackingRepository,
+    private val leaveTripUseCase: LeaveTripUseCase,
     @ApplicationContext private val context: Context,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
@@ -91,6 +93,27 @@ class TripDetailsViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             tripRepository.deleteTrip(tripId)
+                .onSuccess {
+                    _uiState.update { it.copy(isLoading = false) }
+                    onSuccess()
+                }
+                .onFailure { e ->
+                    _uiState.update { it.copy(error = e.message, isLoading = false) }
+                }
+        }
+    }
+
+    fun onLeaveTrip(onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            
+            // 1. Stop tracking if active
+            if (_uiState.value.isTrackingActive) {
+                stopTracking()
+            }
+            
+            // 2. Leave trip
+            leaveTripUseCase(tripId)
                 .onSuccess {
                     _uiState.update { it.copy(isLoading = false) }
                     onSuccess()

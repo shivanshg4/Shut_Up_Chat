@@ -6,6 +6,7 @@ import com.chat.shutup.data.remote.source.FirebaseLocationDataSource
 import com.chat.shutup.domain.model.LocationPoint
 import com.chat.shutup.domain.repository.TripLocationRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
@@ -24,6 +25,9 @@ class TripLocationRepositoryImpl @Inject constructor(
     override fun observeMemberLocations(tripId: String): Flow<Map<String, LocationPoint>> {
         return dataSource.observeTripLocations(tripId).map { dtoMap ->
             dtoMap.mapValues { it.value.toLocationPoint() }
+        }.catch { e ->
+            android.util.Log.e("TripLocationRepo", "Error observing locations: ${e.message}")
+            emit(emptyMap())
         }
     }
 

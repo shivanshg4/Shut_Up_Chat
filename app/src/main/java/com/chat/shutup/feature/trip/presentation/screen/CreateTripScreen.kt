@@ -2,28 +2,28 @@ package com.chat.shutup.feature.trip.presentation.screen
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AddLocation
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.chat.shutup.feature.trip.presentation.viewmodel.CreateTripViewModel
+import com.chat.shutup.ui.components.ShutUpPrimaryButton
+import com.chat.shutup.ui.components.ShutUpTextField
+import com.chat.shutup.ui.components.ShutUpTopBar
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateTripScreen(
     onBackClick: () -> Unit,
@@ -35,21 +35,14 @@ fun CreateTripScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Create Trip") },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                }
-            )
+            ShutUpTopBar(title = "Create Trip", onBackClick = onBackClick)
         }
     ) { padding ->
         Column(
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
-                .padding(24.dp)
+                .padding(horizontal = 24.dp)
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top
@@ -61,6 +54,7 @@ fun CreateTripScreen(
                     onContinue = { onTripCreated(uiState.createdTrip!!.id) }
                 )
             } else {
+                Spacer(modifier = Modifier.height(16.dp))
                 Text(
                     text = "Plan your adventure",
                     style = MaterialTheme.typography.headlineSmall,
@@ -68,13 +62,11 @@ fun CreateTripScreen(
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(24.dp))
-                OutlinedTextField(
+                
+                ShutUpTextField(
                     value = uiState.tripName,
                     onValueChange = { viewModel.onTripNameChange(it) },
-                    label = { Text("Trip Name") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    isError = uiState.error != null
+                    label = "Trip Name"
                 )
                 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -130,18 +122,21 @@ fun CreateTripScreen(
                         modifier = Modifier.fillMaxWidth().padding(start = 16.dp, top = 4.dp)
                     )
                 }
+                
                 Spacer(modifier = Modifier.height(32.dp))
-                Button(
+                
+                ShutUpPrimaryButton(
+                    text = "Create Trip",
                     onClick = { viewModel.onCreateTrip() },
-                    modifier = Modifier.fillMaxWidth(),
                     enabled = !uiState.isLoading
-                ) {
-                    if (uiState.isLoading) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
-                    } else {
-                        Text("Create Trip")
-                    }
+                )
+                
+                if (uiState.isLoading) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    CircularProgressIndicator()
                 }
+                
+                Spacer(modifier = Modifier.height(32.dp))
             }
         }
     }
@@ -158,7 +153,8 @@ fun LocationSelectionSection(
         Spacer(modifier = Modifier.height(8.dp))
         OutlinedCard(
             modifier = Modifier.fillMaxWidth(),
-            onClick = onSelectClick
+            onClick = onSelectClick,
+            shape = RoundedCornerShape(16.dp)
         ) {
             Row(
                 modifier = Modifier.padding(16.dp),
@@ -193,12 +189,12 @@ fun TripCreatedSuccess(
     inviteCode: String,
     onContinue: () -> Unit
 ) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(vertical = 32.dp)) {
         Icon(
             imageVector = Icons.Default.CheckCircle,
             contentDescription = null,
             modifier = Modifier.size(80.dp),
-            tint = Color(0xFF4CAF50)
+            tint = MaterialTheme.colorScheme.primary
         )
         Spacer(modifier = Modifier.height(24.dp))
         Text(
@@ -214,10 +210,11 @@ fun TripCreatedSuccess(
         )
         Spacer(modifier = Modifier.height(32.dp))
         Card(
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+            shape = RoundedCornerShape(24.dp)
         ) {
             Column(
-                modifier = Modifier.padding(24.dp),
+                modifier = Modifier.padding(32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(text = "Invite Code", style = MaterialTheme.typography.labelLarge)
@@ -225,16 +222,15 @@ fun TripCreatedSuccess(
                     text = inviteCode,
                     style = MaterialTheme.typography.displaySmall,
                     fontWeight = FontWeight.Black,
-                    letterSpacing = 4.sp
+                    letterSpacing = 4.sp,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             }
         }
         Spacer(modifier = Modifier.height(48.dp))
-        Button(
-            onClick = onContinue,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Continue to Trip")
-        }
+        ShutUpPrimaryButton(
+            text = "Continue to Trip",
+            onClick = onContinue
+        )
     }
 }
