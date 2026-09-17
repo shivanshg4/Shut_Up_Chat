@@ -28,4 +28,5 @@ interface TripRepository {
     suspend fun ensureTripLocal(trip: Trip)
     suspend fun deleteTrip(tripId: String): Result<Unit>
     suspend fun pushTripEvent(tripId: String, event: com.chat.shutup.domain.model.TripNotificationData)
+    suspend fun cancelAllAlarms()
 }

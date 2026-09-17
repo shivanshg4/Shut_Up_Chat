@@ -13,7 +13,6 @@ import com.chat.shutup.data.repository.ChatRepositoryImpl
 import com.chat.shutup.data.repository.DefaultLocationClient
 import com.chat.shutup.data.repository.FcmRepositoryImpl
 import com.chat.shutup.data.repository.LocationSearchRepositoryImpl
-import com.chat.shutup.domain.repository.LocationSearchRepository
 import com.chat.shutup.data.repository.PreferenceTrackingRepository
 import com.chat.shutup.data.repository.RouteRepositoryImpl
 import com.chat.shutup.data.repository.TripChatRepositoryImpl
@@ -24,6 +23,7 @@ import com.chat.shutup.domain.repository.AuthRepository
 import com.chat.shutup.domain.repository.ChatRepository
 import com.chat.shutup.domain.repository.FcmRepository
 import com.chat.shutup.domain.repository.LocationClient
+import com.chat.shutup.domain.repository.LocationSearchRepository
 import com.chat.shutup.domain.repository.RouteRepository
 import com.chat.shutup.domain.repository.TrackingRepository
 import com.chat.shutup.domain.repository.TripChatRepository
@@ -136,7 +136,7 @@ abstract class AppModule {
         @Provides
         @Singleton
         fun provideFirebaseDatabase(): com.google.firebase.database.FirebaseDatabase {
-            return com.google.firebase.database.FirebaseDatabase.getInstance("https://shut-up-chat-default-rtdb.firebaseio.com")
+            return com.google.firebase.database.FirebaseDatabase.getInstance(com.chat.shutup.BuildConfig.FIREBASE_DATABASE_URL)
         }
 
         @Provides

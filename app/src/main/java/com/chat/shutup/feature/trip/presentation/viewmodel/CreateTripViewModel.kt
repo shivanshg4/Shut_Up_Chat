@@ -54,6 +54,10 @@ class CreateTripViewModel @Inject constructor(
         _uiState.update { it.copy(destination = location, error = null) }
     }
 
+    fun onStartTimeChange(timestamp: Long?) {
+        _uiState.update { it.copy(startTime = timestamp) }
+    }
+
     fun onTravelModeChange(mode: TravelMode) {
         _uiState.update { it.copy(travelMode = mode) }
     }
@@ -89,6 +93,7 @@ class CreateTripViewModel @Inject constructor(
                 name = state.tripName.trim(),
                 creatorId = firebaseUser.uid,
                 inviteCode = state.inviteCode,
+                startTime = state.startTime,
                 origin = state.origin,
                 destination = state.destination,
                 travelMode = state.travelMode,

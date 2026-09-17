@@ -10,6 +10,7 @@ data class TripEntity(
     val name: String,
     val creatorId: String,
     val inviteCode: String,
+    val startTime: Long?,
     val createdAt: Long,
     val originLat: Double?,
     val originLng: Double?,

@@ -48,52 +48,38 @@ class VehicleSpriteProvider(private val context: Context) {
      * @param bearing The movement bearing (0..360).
      */
     fun getSpriteForBearing(row: Int, bearing: Float): BitmapDescriptor? {
-        if (spriteSheet == null) {
-            Log.e("TripVehicleDebug", "getSpriteForBearing failed: spriteSheet is null")
-            return null
-        }
-        
-        // Normalize bearing to 0..360
-        var normalizedBearing = bearing % 360
-        if (normalizedBearing < 0) normalizedBearing += 360
-        
-        // Map bearing to 8 directional sectors
-        // 0: N, 1: NE, 2: E, 3: SE, 4: S, 5: SW, 6: W, 7: NW
-        val sector = (((normalizedBearing + 22.5f) % 360) / 45f).toInt()
-        
-        // Direction mapping based on typical sprite sheet orientation
-        // Sector: 0(N), 1(NE), 2(E), 3(SE), 4(S), 5(SW), 6(W), 7(NW)
-        // Adjust these indices if the car faces the wrong way
-        val sectorToColumn = intArrayOf(4, 5, 6, 7, 0, 1, 2, 3) 
-        val col = sectorToColumn[sector.coerceIn(0, 7)]
-
-        val cacheKey = "row_${row}_col_$col"
+        val bitmap = getSpriteBitmapForBearing(row, bearing) ?: return null
+        val cacheKey = "desc_row_${row}_bearing_${(bearing / 45).toInt()}"
         return spriteCache.getOrPut(cacheKey) {
-            extractAndScaleSprite(row, col)
+            BitmapDescriptorFactory.fromBitmap(bitmap)
         }
     }
 
-    private fun extractAndScaleSprite(row: Int, col: Int): BitmapDescriptor {
+    fun getSpriteBitmapForBearing(row: Int, bearing: Float): Bitmap? {
+        if (spriteSheet == null) return null
+
+        var normalizedBearing = bearing % 360
+        if (normalizedBearing < 0) normalizedBearing += 360
+
+        val sector = (((normalizedBearing + 22.5f) % 360) / 45f).toInt()
+        val sectorToColumn = intArrayOf(4, 5, 6, 7, 0, 1, 2, 3)
+        val col = sectorToColumn[sector.coerceIn(0, 7)]
+
+        return extractAndScaleBitmap(row, col)
+    }
+
+    private fun extractAndScaleBitmap(row: Int, col: Int): Bitmap {
         val sheet = spriteSheet!!
         val x = col * spriteWidth
         val y = row * spriteHeight
-        
-        Log.d("TripVehicleDebug", "Extracting sprite at row $row, col $col ($x, $y)")
-        
+
         val cropped = Bitmap.createBitmap(sheet, x, y, spriteWidth, spriteHeight)
-        
-        // Scale to 48dp to ensure it's visible on all screens
         val density = context.resources.displayMetrics.density
         val targetSizePx = (48 * density).toInt()
-        
         val scaled = Bitmap.createScaledBitmap(cropped, targetSizePx, targetSizePx, true)
-        
-        val descriptor = BitmapDescriptorFactory.fromBitmap(scaled)
-        
-        // Cleanup intermediate bitmaps
-        if (cropped != scaled) cropped.recycle()
 
-        return descriptor
+        if (cropped != scaled) cropped.recycle()
+        return scaled
     }
     
     fun clearCache() {

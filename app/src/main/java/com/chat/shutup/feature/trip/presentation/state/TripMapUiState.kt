@@ -7,6 +7,7 @@ import com.chat.shutup.domain.model.TripMember
 import com.chat.shutup.domain.model.TripRoute
 import com.chat.shutup.domain.repository.TrackingStatus
 import com.chat.shutup.feature.chat.domain.model.Message
+import com.google.android.gms.maps.model.LatLng
 
 data class MemberLocationState(
     val member: TripMember,
@@ -35,5 +36,11 @@ data class TripMapUiState(
     val lastReadTimestamp: Long = 0L,
     val error: String? = null,
     val isPermissionGranted: Boolean = false,
-    val shouldShowRationale: Boolean = false
+    val shouldShowRationale: Boolean = false,
+    val isAutoCameraEnabled: Boolean = true,
+    val decodedRoutePoints: List<LatLng> = emptyList(),
+    val completedRoutePoints: List<LatLng> = emptyList(),
+    val remainingRoutePoints: List<LatLng> = emptyList(),
+    val selectedMember: MemberLocationState? = null,
+    val mapType: Int = 1 // GoogleMap.MAP_TYPE_NORMAL
 )

@@ -21,6 +21,9 @@ interface TripMemberDao {
     @Query("SELECT EXISTS(SELECT 1 FROM trip_members WHERE tripId = :tripId AND userId = :userId)")
     suspend fun isUserMemberOfTrip(tripId: String, userId: String): Boolean
 
+    @Query("SELECT * FROM trip_members WHERE tripId = :tripId AND userId = :userId LIMIT 1")
+    suspend fun getMember(tripId: String, userId: String): TripMemberEntity?
+
     @Query("DELETE FROM trip_members WHERE tripId = :tripId AND userId = :userId")
     suspend fun deleteMember(tripId: String, userId: String)
 

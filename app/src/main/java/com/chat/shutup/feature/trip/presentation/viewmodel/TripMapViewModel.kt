@@ -29,6 +29,10 @@ import com.chat.shutup.feature.chat.domain.model.Message
 import com.chat.shutup.feature.chat.domain.model.MessageStatus
 import com.chat.shutup.feature.chat.domain.model.MessageType
 import com.chat.shutup.ui.navigation.Screen
+import com.google.android.gms.maps.model.LatLng
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
@@ -36,8 +40,9 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-@HiltViewModel
-class TripMapViewModel @Inject constructor(
+@HiltViewModel(assistedFactory = TripMapViewModel.Factory::class)
+//class TripMapViewModel @Inject constructor(
+class TripMapViewModel @AssistedInject constructor(
     private val locationClient: LocationClient,
     private val tripLocationRepository: TripLocationRepository,
     private val tripRepository: TripRepository,
@@ -48,14 +53,19 @@ class TripMapViewModel @Inject constructor(
     private val trackingRepository: TrackingRepository,
     val spriteProvider: VehicleSpriteProvider,
     @ApplicationContext private val context: Context,
-    savedStateHandle: SavedStateHandle
+//    savedStateHandle: SavedStateHandle
+    @Assisted private val tripId : String
 ) : ViewModel() {
 
-    val tripId: String = try {
+    @AssistedFactory
+    interface Factory{
+        fun create(tripId : String) : TripMapViewModel
+    }
+    /*val tripId: String = try {
         savedStateHandle.toRoute<Screen.TripMap>().tripId
     } catch (e: Exception) {
         ""
-    }
+    }*/
     
     val currentUserId = authRepository.currentUser?.uid
 
@@ -200,6 +210,24 @@ class TripMapViewModel @Inject constructor(
         }
     }
 
+    fun onMapMoved(isUserInitiated: Boolean) {
+        if (isUserInitiated) {
+            _uiState.update { it.copy(isAutoCameraEnabled = false) }
+        }
+    }
+
+    fun recenterCamera() {
+        _uiState.update { it.copy(isAutoCameraEnabled = true) }
+    }
+
+    fun onSelectMember(memberState: MemberLocationState?) {
+        _uiState.update { it.copy(selectedMember = memberState) }
+    }
+
+    fun onMapTypeSelected(mapType: Int) {
+        _uiState.update { it.copy(mapType = mapType) }
+    }
+
     private fun observeMembersAndLocations() {
         membersJob?.cancel()
         membersJob = combine(
@@ -243,15 +271,56 @@ class TripMapViewModel @Inject constructor(
                 )
             }
         }.onEach { memberStates ->
-            _uiState.update { it.copy(members = memberStates) }
+            val myState = memberStates.find { it.member.userId == currentUserId }
+            val myProgress = myState?.progress
+            val routePoints = _uiState.value.route?.points ?: emptyList()
+
+            val decodedPoints = routePoints.map { LatLng(it.latitude, it.longitude) }
+
+            val (completed, remaining) = if (myProgress != null && routePoints.isNotEmpty()) {
+                val splitIndex = findClosestPointIndex(myProgress.progressDistanceMeters, routePoints)
+                val comp = decodedPoints.take(splitIndex + 1)
+                val rem = if (splitIndex < decodedPoints.size) decodedPoints.drop(splitIndex) else emptyList()
+                comp to rem
+            } else {
+                emptyList<LatLng>() to decodedPoints
+            }
+
+            _uiState.update { state ->
+                state.copy(
+                    members = memberStates,
+                    decodedRoutePoints = decodedPoints,
+                    completedRoutePoints = completed,
+                    remainingRoutePoints = remaining,
+                    currentLocation = myState?.location ?: state.currentLocation
+                )
+            }
             
             handleOffRouteEvents(memberStates)
-
-            // Also update currentLocation for map centering/UI
-            memberStates.find { it.member.userId == currentUserId }?.location?.let { loc ->
-                _uiState.update { it.copy(currentLocation = loc) }
-            }
         }.launchIn(viewModelScope)
+    }
+
+    private fun findClosestPointIndex(progressMeters: Double, points: List<com.chat.shutup.domain.model.RoutePoint>): Int {
+        var cumulative = 0.0
+        for (i in 0 until points.size - 1) {
+            val p1 = points[i]
+            val p2 = points[i + 1]
+            val d = calculateDistance(p1.latitude, p1.longitude, p2.latitude, p2.longitude)
+            if (cumulative + d >= progressMeters) return i
+            cumulative += d
+        }
+        return points.size - 1
+    }
+
+    private fun calculateDistance(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
+        val r = 6371000.0
+        val dLat = Math.toRadians(lat2 - lat1)
+        val dLon = Math.toRadians(lon2 - lon1)
+        val a = kotlin.math.sin(dLat / 2) * kotlin.math.sin(dLat / 2) +
+                kotlin.math.cos(Math.toRadians(lat1)) * kotlin.math.cos(Math.toRadians(lat2)) *
+                kotlin.math.sin(dLon / 2) * kotlin.math.sin(dLon / 2)
+        val c = 2 * kotlin.math.atan2(kotlin.math.sqrt(a), kotlin.math.sqrt(1 - a))
+        return r * c
     }
 
     private fun handleOffRouteEvents(memberStates: List<MemberLocationState>) {

@@ -7,10 +7,12 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
+import com.chat.shutup.domain.repository.AppThemeMode
 
 private val LightColorScheme = lightColorScheme(
     primary = ForestGreen,
@@ -25,11 +27,11 @@ private val LightColorScheme = lightColorScheme(
     onBackground = OnBackgroundLight,
     surface = SurfaceLight,
     onSurface = OnSurfaceLight,
-    surfaceVariant = BackgroundLight,
+    surfaceVariant = SurfaceLight,
     onSurfaceVariant = OnSurfaceVariantLight,
     outline = OutlineLight,
     error = ErrorRed,
-    onError = SurfaceLight
+    onError = OnErrorLight
 )
 
 private val DarkColorScheme = darkColorScheme(
@@ -45,28 +47,24 @@ private val DarkColorScheme = darkColorScheme(
     onBackground = OnBackgroundDark,
     surface = SurfaceDark,
     onSurface = OnSurfaceDark,
-    surfaceVariant = SurfaceDark,
+    surfaceVariant = SurfaceVariantDark,
     onSurfaceVariant = OnSurfaceVariantDark,
     outline = OutlineDark,
     error = ErrorRed,
-    onError = SurfaceDark
+    onError = OnErrorDark
 )
-
-object AppTheme {
-    val spacing: Spacing
-        @Composable
-        get() = LocalSpacing.current
-
-    val dimensions: Dimensions
-        @Composable
-        get() = LocalDimensions.current
-}
 
 @Composable
 fun ShutUpChatTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    themeMode: AppThemeMode = AppThemeMode.SYSTEM,
     content: @Composable () -> Unit
 ) {
+    val darkTheme = when (themeMode) {
+        AppThemeMode.SYSTEM -> isSystemInDarkTheme()
+        AppThemeMode.LIGHT -> false
+        AppThemeMode.DARK -> true
+    }
+    
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
     val view = LocalView.current
     
@@ -74,7 +72,9 @@ fun ShutUpChatTheme(
         SideEffect {
             val window = (view.context as Activity).window
             window.statusBarColor = colorScheme.background.toArgb()
+            window.navigationBarColor = colorScheme.surface.toArgb()
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+            WindowCompat.getInsetsController(window, view).isAppearanceLightNavigationBars = !darkTheme
         }
     }
 
@@ -89,4 +89,16 @@ fun ShutUpChatTheme(
             content = content
         )
     }
+}
+
+object AppTheme {
+    val spacing: Spacing
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalSpacing.current
+
+    val dimensions: Dimensions
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalDimensions.current
 }

@@ -56,7 +56,7 @@ fun Avatar(
                     .align(Alignment.BottomEnd)
                     .background(MaterialTheme.colorScheme.surface, CircleShape)
                     .padding(2.dp)
-                    .background(Color.Green, CircleShape)
+                    .background(Color(0xFF2E7D32), CircleShape)
             )
         }
     }

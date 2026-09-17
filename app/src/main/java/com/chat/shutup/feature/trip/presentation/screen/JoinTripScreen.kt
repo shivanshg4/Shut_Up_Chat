@@ -14,7 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.chat.shutup.feature.trip.presentation.screen.components.QRScanner
 import com.chat.shutup.feature.trip.presentation.viewmodel.JoinTripViewModel
 import com.chat.shutup.ui.components.ShutUpPrimaryButton
@@ -50,12 +50,12 @@ fun JoinTripScreen(
                 
                 Surface(
                     modifier = Modifier.align(Alignment.BottomCenter).padding(32.dp),
-                    color = Color.Black.copy(alpha = 0.6f),
+                    color = MaterialTheme.colorScheme.inverseSurface.copy(alpha = 0.8f),
                     shape = MaterialTheme.shapes.medium
                 ) {
                     Text(
                         text = "Center the QR code in the frame",
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.inverseOnSurface,
                         modifier = Modifier.padding(16.dp),
                         style = MaterialTheme.typography.bodyMedium
                     )

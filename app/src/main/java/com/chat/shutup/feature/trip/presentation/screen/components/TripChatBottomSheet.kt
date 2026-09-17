@@ -4,139 +4,225 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
+import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.chat.shutup.domain.repository.TrackingStatus
-import com.chat.shutup.feature.chat.domain.model.Message
-import com.chat.shutup.feature.trip.presentation.state.MemberLocationState
 import com.chat.shutup.feature.trip.presentation.state.TripMapUiState
 import com.chat.shutup.ui.components.chat.MessageBubble
 import com.chat.shutup.ui.components.chat.MessageComposer
 import java.util.*
 
 @Composable
-fun TripChatHeader(
+fun TripChatBottomSheet(
     uiState: TripMapUiState,
     currentUserId: String?,
     isExpanded: Boolean,
-    onToggleExpand: () -> Unit
+    onToggleExpand: () -> Unit,
+    onSendMessage: (String) -> Unit,
+    onToggleTracking: () -> Unit,
+    onNavigateToDetails: () -> Unit
 ) {
-    val members = uiState.members
-    val route = uiState.route
-    val myMemberState = members.find { it.member.userId == currentUserId }
+    val myProgress = uiState.members.find { it.member.userId == currentUserId }?.progress
+    var selectedSection by remember { mutableStateOf(BottomSheetSection.STATUS) }
     
+    // Auto-switch section when expanded if needed
+    LaunchedEffect(isExpanded) {
+        if (!isExpanded) {
+            selectedSection = BottomSheetSection.STATUS
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onToggleExpand() }
-            .padding(16.dp)
+            .imePadding()
+            .navigationBarsPadding()
     ) {
-        // Drag Handle
-        Box(
+        // --- COLLAPSED CONTENT (Always visible at top) ---
+        Column(
             modifier = Modifier
-                .width(40.dp)
-                .height(4.dp)
-                .background(MaterialTheme.colorScheme.outlineVariant, CircleShape)
-                .align(Alignment.CenterHorizontally)
-        )
-        
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .fillMaxWidth()
+                .clickable { onToggleExpand() }
+                .padding(horizontal = 20.dp, vertical = 12.dp)
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.Chat,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp)
+            // Drag Handle
+            Box(
+                modifier = Modifier
+                    .width(32.dp)
+                    .height(4.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.outlineVariant)
+                    .align(Alignment.CenterHorizontally)
+            )
+            
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Left side: Distance
+                Column {
+                    val distRemaining = myProgress?.distanceRemainingMeters ?: 0.0
+                    Text(
+                        text = if (distRemaining > 0) String.format(Locale.getDefault(), "%.1f km", distRemaining / 1000.0) else "-- km",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "remaining",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                // Right side: Active Members
+                Column(horizontalAlignment = Alignment.End) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(modifier = Modifier.size(8.dp).background(Color(0xFF4CAF50), CircleShape))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        val liveCount = uiState.members.count { !it.isStale }
+                        Text(
+                            text = if (liveCount == 1) "1 member live" else "$liveCount members live",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                    Text(
+                        text = "Group status active",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Section Tabs (Visible when expanded or as a quick-access row when collapsed)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                StatusTab(
+                    label = "Trip Chat",
+                    icon = Icons.AutoMirrored.Filled.Chat,
+                    isSelected = selectedSection == BottomSheetSection.CHAT && isExpanded,
+                    unreadCount = uiState.unreadCount,
+                    onClick = {
+                        if (!isExpanded) onToggleExpand()
+                        selectedSection = BottomSheetSection.CHAT
+                    },
+                    modifier = Modifier.weight(1f)
                 )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Trip Chat",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                
+                StatusTab(
+                    label = "Members",
+                    icon = Icons.Default.Group,
+                    isSelected = selectedSection == BottomSheetSection.MEMBERS && isExpanded,
+                    onClick = {
+                        if (!isExpanded) onToggleExpand()
+                        selectedSection = BottomSheetSection.MEMBERS
+                    },
+                    modifier = Modifier.weight(1f)
                 )
-                if (!isExpanded && uiState.unreadCount > 0) {
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Surface(
-                        modifier = Modifier.size(20.dp),
-                        shape = CircleShape,
-                        color = Color.Red
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Text(
-                                text = uiState.unreadCount.toString(),
-                                color = Color.White,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold
+            }
+        }
+
+        // --- EXPANDED CONTENT ---
+        if (isExpanded) {
+            Column(modifier = Modifier.fillMaxHeight(0.6f)) {
+                HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
+                
+                Box(modifier = Modifier.weight(1f)) {
+                    when (selectedSection) {
+                        BottomSheetSection.STATUS, BottomSheetSection.CHAT -> {
+                            ChatSection(
+                                uiState = uiState,
+                                currentUserId = currentUserId,
+                                onSendMessage = onSendMessage
+                            )
+                        }
+                        BottomSheetSection.MEMBERS -> {
+                            MembersSection(
+                                uiState = uiState,
+                                currentUserId = currentUserId,
+                                onNavigateToDetails = onNavigateToDetails,
+                                onToggleTracking = onToggleTracking
                             )
                         }
                     }
                 }
             }
-            Icon(
-                imageVector = if (isExpanded) Icons.Default.KeyboardArrowDown else Icons.Default.KeyboardArrowUp,
-                contentDescription = if (isExpanded) "Collapse" else "Expand"
-            )
         }
-        
-        Spacer(modifier = Modifier.height(8.dp))
-        
-        // Compact Progress & Status
+    }
+}
+
+enum class BottomSheetSection {
+    STATUS, CHAT, MEMBERS
+}
+
+@Composable
+fun StatusTab(
+    label: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    isSelected: Boolean,
+    unreadCount: Int = 0,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier,
+        shape = RoundedCornerShape(12.dp),
+        color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        border = if (isSelected) androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary) else null
+    ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
         ) {
-            Column {
-                Text(
-                    text = "${members.size} members" + (route?.let { " • ${String.format(Locale.getDefault(), "%.1f", it.distanceMeters / 1000.0)} km total" } ?: ""),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                
-                myMemberState?.progress?.let { p ->
-                    Text(
-                        text = "You: ${String.format(Locale.getDefault(), "%.1f", p.progressDistanceMeters / 1000.0)} km (${(p.progressPercentage * 100).toInt()}%)",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-            
-            if (uiState.trackingStatus == TrackingStatus.TRACKING) {
+            Icon(
+                imageVector = icon, 
+                contentDescription = null, 
+                modifier = Modifier.size(18.dp), 
+                tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            if (unreadCount > 0) {
+                Spacer(modifier = Modifier.width(6.dp))
                 Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = Color(0xFFE8F5E9),
-                    modifier = Modifier.height(24.dp)
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(18.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(modifier = Modifier.size(6.dp).background(Color(0xFF4CAF50), CircleShape))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(text = "Live", style = MaterialTheme.typography.labelSmall, color = Color(0xFF2E7D32))
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(unreadCount.toString(), color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -145,11 +231,10 @@ fun TripChatHeader(
 }
 
 @Composable
-fun TripChatContent(
+fun ChatSection(
     uiState: TripMapUiState,
     currentUserId: String?,
-    onSendMessage: (String) -> Unit,
-    onToggleTracking: () -> Unit
+    onSendMessage: (String) -> Unit
 ) {
     var messageText by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
@@ -161,46 +246,23 @@ fun TripChatContent(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // Members List (Horizontal)
-        if (uiState.members.isNotEmpty()) {
-            LazyRow(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp)
-            ) {
-                items(uiState.members) { memberState ->
-                    MemberCompactCard(memberState = memberState, isMe = memberState.member.userId == currentUserId)
-                }
-            }
-        }
-
-        // Tracking Toggle Button (Moved here to save map space)
-        TrackingToggleButton(
-            trackingStatus = uiState.trackingStatus,
-            isActiveForThisTrip = uiState.activeTrackingTripId == uiState.trip?.id,
-            onToggle = onToggleTracking,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-        )
-
-        HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
-
         // Message List
-        Box(modifier = Modifier.weight(1f)) {
+        Box(modifier = Modifier.weight(1f).background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.1f))) {
             if (uiState.chatMessages.isEmpty()) {
                 Column(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = null, tint = MaterialTheme.colorScheme.outline, modifier = Modifier.size(48.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        text = "Start the conversation",
+                        text = "No messages yet",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "Send a message to your trip group.",
+                        text = "Start the conversation with your group.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.outline
                     )
@@ -214,24 +276,12 @@ fun TripChatContent(
                 ) {
                     items(uiState.chatMessages) { message ->
                         val isMe = message.senderId == currentUserId
-                        val senderName = uiState.members.find { it.member.userId == message.senderId }?.member?.name ?: "Unknown"
-                        
-                        Column(modifier = Modifier.fillMaxWidth()) {
-                            if (!isMe) {
-                                Text(
-                                    text = senderName,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.padding(start = 4.dp, bottom = 2.dp)
-                                )
-                            }
-                            MessageBubble(
-                                text = message.text,
-                                timestamp = message.timestamp,
-                                isOutgoing = isMe,
-                                status = message.status
-                            )
-                        }
+                        MessageBubble(
+                            text = message.text,
+                            timestamp = message.timestamp,
+                            isOutgoing = isMe,
+                            status = message.status
+                        )
                     }
                 }
             }
@@ -239,11 +289,11 @@ fun TripChatContent(
 
         // Composer
         Surface(
-            tonalElevation = 2.dp,
-            modifier = Modifier.navigationBarsPadding()
+            tonalElevation = 8.dp,
+            color = MaterialTheme.colorScheme.surface
         ) {
             MessageComposer(
-                modifier = Modifier.fillMaxWidth().navigationBarsPadding().imePadding(),
+                modifier = Modifier.fillMaxWidth().padding(8.dp),
                 value = messageText,
                 onValueChange = { messageText = it },
                 onSendClick = {
@@ -262,75 +312,71 @@ fun TripChatContent(
 }
 
 @Composable
-fun MemberCompactCard(memberState: MemberLocationState, isMe: Boolean) {
-    val progress = memberState.progress
-    Card(
-        modifier = Modifier.width(140.dp),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        )
-    ) {
-        Column(modifier = Modifier.padding(8.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .background(
-                            if (memberState.isStale) Color.Yellow else Color(0xFF4CAF50),
-                            CircleShape
-                        )
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = if (isMe) "You" else memberState.member.name,
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1
-                )
-            }
-            if (progress != null) {
-                if (progress.isOffRoute) {
-                    Text(text = "Off route", style = MaterialTheme.typography.labelSmall, color = Color.Red)
-                } else if (!isMe) {
-                    val statusText = when {
-                        progress.isNear -> "Near you"
-                        progress.isAhead -> "${String.format(Locale.getDefault(), "%.1f", progress.aheadBehindDistanceMeters / 1000.0)} km ahead"
-                        progress.isBehind -> "${String.format(Locale.getDefault(), "%.1f", progress.aheadBehindDistanceMeters / 1000.0)} km behind"
-                        else -> ""
+fun MembersSection(
+    uiState: TripMapUiState,
+    currentUserId: String?,
+    onNavigateToDetails: () -> Unit,
+    onToggleTracking: () -> Unit
+) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = Modifier.weight(1f),
+            contentPadding = PaddingValues(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            items(uiState.members) { state ->
+                val isMe = state.member.userId == currentUserId
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(modifier = Modifier.size(40.dp).background(MaterialTheme.colorScheme.primaryContainer, CircleShape), contentAlignment = Alignment.Center) {
+                        Text(state.member.name.take(1).uppercase(), style = MaterialTheme.typography.titleMedium)
                     }
-                    Text(text = statusText, style = MaterialTheme.typography.labelSmall)
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(text = if (isMe) "You" else state.member.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+                        val statusText = if (isMe) "● Live" 
+                                       else if (state.progress?.isAhead == true) "${String.format(Locale.getDefault(), "%.1f km", state.progress.aheadBehindDistanceMeters / 1000.0)} ahead"
+                                       else if (state.progress?.isBehind == true) "${String.format(Locale.getDefault(), "%.1f km", state.progress.aheadBehindDistanceMeters / 1000.0)} behind"
+                                       else "Nearby"
+                        Text(text = statusText, style = MaterialTheme.typography.bodySmall, color = if (isMe) Color(0xFF4CAF50) else MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    if (state.isStale) {
+                        Text(text = "Offline", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
+                    }
                 }
             }
         }
-    }
-}
 
-@Composable
-fun TrackingToggleButton(
-    trackingStatus: TrackingStatus,
-    isActiveForThisTrip: Boolean,
-    onToggle: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val isTracking = trackingStatus == TrackingStatus.TRACKING && isActiveForThisTrip
-    
-    Button(
-        onClick = onToggle,
-        modifier = modifier.fillMaxWidth(),
-        colors = if (isTracking) {
-            ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-        } else {
-            ButtonDefaults.buttonColors()
-        },
-        contentPadding = PaddingValues(vertical = 8.dp)
-    ) {
-        if (isTracking) {
-            Icon(Icons.Default.Stop, contentDescription = null, modifier = Modifier.size(18.dp))
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Stop Sharing Location")
-        } else {
-            Text("Start Sharing Location")
+        // Action Bar (Members section only)
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(20.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Button(
+                onClick = onNavigateToDetails,
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("View Trip Details")
+            }
+            
+            val isTracking = uiState.trackingStatus == TrackingStatus.TRACKING
+            IconButton(
+                onClick = onToggleTracking,
+                modifier = Modifier.size(48.dp).background(
+                    if (isTracking) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.primaryContainer,
+                    RoundedCornerShape(12.dp)
+                )
+            ) {
+                Icon(
+                    imageVector = if (isTracking) Icons.Default.Stop else Icons.Default.PlayArrow,
+                    contentDescription = "Sharing",
+                    tint = if (isTracking) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                )
+            }
         }
     }
 }

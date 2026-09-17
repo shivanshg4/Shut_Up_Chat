@@ -30,7 +30,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import com.chat.shutup.domain.model.Trip
 import com.chat.shutup.feature.trip.presentation.screen.components.HomeEnvironment
@@ -247,12 +247,12 @@ fun HomeHeaderSection(
             Surface(
                 onClick = { /* Menu */ },
                 shape = CircleShape,
-                color = Color.White.copy(alpha = 0.9f),
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
                 modifier = Modifier.size(44.dp),
                 shadowElevation = 1.dp
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Icon(Icons.Default.Menu, contentDescription = "Menu", modifier = Modifier.size(20.dp), tint = Color.DarkGray)
+                    Icon(Icons.Default.Menu, contentDescription = "Menu", modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurface)
                 }
             }
 
@@ -260,16 +260,16 @@ fun HomeHeaderSection(
                 Surface(
                     onClick = onChatsClick,
                     shape = CircleShape,
-                    color = Color.White.copy(alpha = 0.9f),
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
                     modifier = Modifier.size(44.dp),
                     shadowElevation = 1.dp
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Icon(Icons.Default.Notifications, contentDescription = "Notifications", modifier = Modifier.size(20.dp), tint = Color.DarkGray)
+                        Icon(Icons.Default.Notifications, contentDescription = "Notifications", modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurface)
                         Box(
                             modifier = Modifier
                                 .size(6.dp)
-                                .background(Color(0xFFE53935), CircleShape)
+                                .background(MaterialTheme.colorScheme.error, CircleShape)
                                 .align(Alignment.TopEnd)
                                 .offset(x = (-12).dp, y = 12.dp)
                         )
@@ -280,8 +280,8 @@ fun HomeHeaderSection(
                     onClick = onSettingsClick,
                     shape = CircleShape,
                     modifier = Modifier.size(44.dp),
-                    color = Color(0xFFEEEEEE),
-                    border = androidx.compose.foundation.BorderStroke(2.dp, Color.White),
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    border = androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.surface),
                     shadowElevation = 2.dp
                 ) {
                     AsyncImage(
@@ -361,7 +361,7 @@ fun ActiveTripHeroCard(
                 var showMenu by remember { mutableStateOf(false) }
                 Box {
                     IconButton(onClick = { showMenu = true }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "Menu", tint = Color.Gray)
+                        Icon(Icons.Default.MoreVert, contentDescription = "Menu", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     DropdownMenu(
                         expanded = showMenu,
@@ -400,27 +400,28 @@ fun ActiveTripHeroCard(
                     Text(
                         text = "${trip.origin?.address?.substringBefore(",") ?: "Origin"} → ${trip.destination?.address?.substringBefore(",") ?: "Destination"}",
                         style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.People, contentDescription = null, modifier = Modifier.size(14.dp), tint = Color.Gray)
+                        Icon(Icons.Default.People, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text(text = "${trip.members.size} members", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                        Text(text = "${trip.members.size} members", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(modifier = Modifier.width(16.dp))
-                        Icon(Icons.Default.Wifi, contentDescription = null, modifier = Modifier.size(14.dp), tint = Color(0xFF2E7D32))
+                        Icon(Icons.Default.Wifi, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text(text = "Sharing active", style = MaterialTheme.typography.bodySmall, color = Color(0xFF2E7D32))
+                        Text(text = "Sharing active", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
                     }
                 }
 
                 Surface(
                     modifier = Modifier.size(60.dp),
                     shape = RoundedCornerShape(16.dp),
-                    color = Color(0xFFF1F8E9)
+                    color = MaterialTheme.colorScheme.primaryContainer
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Icon(Icons.Default.Map, contentDescription = null, tint = Color(0xFF8BC34A), modifier = Modifier.size(32.dp))
+                        Icon(Icons.Default.Map, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp))
                     }
                 }
             }
@@ -435,12 +436,14 @@ fun ActiveTripHeroCard(
                 Text(
                     text = distanceInfo ?: "---",
                     style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = "${(progress * 100).toInt()}%",
                     style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
             
@@ -449,8 +452,8 @@ fun ActiveTripHeroCard(
             LinearProgressIndicator(
                 progress = { progress },
                 modifier = Modifier.fillMaxWidth().height(8.dp),
-                color = Color(0xFF2E7D32),
-                trackColor = Color(0xFFF0F0F0),
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant,
                 strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
             )
             
@@ -496,7 +499,8 @@ fun WelcomeHeroCard(onCreate: () -> Unit) {
                 text = "Ready for your next adventure?",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
@@ -542,10 +546,10 @@ fun UpcomingTripCompactCard(
                 modifier = Modifier
                     .size(60.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0xFFF5F5F5)),
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Landscape, contentDescription = null, tint = Color.LightGray)
+                Icon(Icons.Default.Landscape, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
             }
             
             Spacer(modifier = Modifier.width(16.dp))
@@ -554,19 +558,20 @@ fun UpcomingTripCompactCard(
                 Text(
                     text = trip.name,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = "${trip.members.size} members",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
             var showMenu by remember { mutableStateOf(false) }
             Box {
                 IconButton(onClick = { showMenu = true }) {
-                    Icon(Icons.Default.MoreVert, contentDescription = "Menu", tint = Color.Gray)
+                    Icon(Icons.Default.MoreVert, contentDescription = "Menu", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 DropdownMenu(
                     expanded = showMenu,
@@ -595,14 +600,14 @@ fun UpcomingTripCompactCard(
             }
 
             Surface(
-                color = Color(0xFFE3F2FD),
+                color = MaterialTheme.colorScheme.secondaryContainer,
                 shape = RoundedCornerShape(8.dp)
             ) {
                 Text(
                     text = "Upcoming",
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                     style = MaterialTheme.typography.labelSmall,
-                    color = Color(0xFF1976D2),
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -649,7 +654,7 @@ fun CreateTripDashedCard(onClick: () -> Unit) {
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = "Create New Trip", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(text = "Create New Trip", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                 Text(text = "Plan a trip and invite your friends", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Icon(Icons.Default.Terrain, contentDescription = null, modifier = Modifier.size(40.dp).alpha(0.15f), tint = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -696,7 +701,7 @@ fun JoinTripDashedCard(onClick: () -> Unit) {
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = "Join a Trip", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(text = "Join a Trip", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                 Text(text = "Use an invite code or scan QR", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Icon(Icons.Default.QrCodeScanner, contentDescription = null, modifier = Modifier.size(40.dp).alpha(0.15f), tint = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -713,7 +718,7 @@ fun SectionTitleRow(title: String, onActionClick: () -> Unit) {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(text = title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text(text = title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
         Text(
             text = "View all",
             style = MaterialTheme.typography.bodySmall,
@@ -729,7 +734,8 @@ fun RecentActivityHeader() {
         text = "Recent Activity",
         style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.Bold,
-        modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 12.dp)
+        modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 12.dp),
+        color = MaterialTheme.colorScheme.onSurface
     )
 }
 
@@ -750,7 +756,7 @@ fun ActivityCard(name: String, action: String, time: String, icon: androidx.comp
             Surface(shape = CircleShape, modifier = Modifier.size(40.dp), color = MaterialTheme.colorScheme.surfaceVariant) { }
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = "$name $action", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                Text(text = "$name $action", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
                 Text(text = time, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer, modifier = Modifier.size(36.dp)) {

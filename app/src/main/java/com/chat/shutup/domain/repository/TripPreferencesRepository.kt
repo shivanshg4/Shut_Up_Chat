@@ -1,5 +1,7 @@
 package com.chat.shutup.domain.repository
 
+import kotlinx.coroutines.flow.Flow
+
 interface TripPreferencesRepository {
     fun getLastReadChatTimestamp(tripId: String): Long
     fun setLastReadChatTimestamp(tripId: String, timestamp: Long)
@@ -10,4 +12,12 @@ interface TripPreferencesRepository {
     
     fun isInteractiveNatureEnabled(): Boolean
     fun setInteractiveNatureEnabled(enabled: Boolean)
+
+    fun getThemeMode(): AppThemeMode
+    fun setThemeMode(mode: AppThemeMode)
+    val themeMode: Flow<AppThemeMode>
+}
+
+enum class AppThemeMode {
+    SYSTEM, LIGHT, DARK
 }

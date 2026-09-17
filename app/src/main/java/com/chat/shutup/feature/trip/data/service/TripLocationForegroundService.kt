@@ -34,7 +34,7 @@ class TripLocationForegroundService : Service() {
     @Inject lateinit var tripRepository: TripRepository
     @Inject lateinit var trackingRepository: TrackingRepository
     @Inject lateinit var authRepository: AuthRepository
-    @Inject lateinit var notificationHelper: TripNotificationHelper
+    @Inject lateinit var notificationManager: TripNotificationManager
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var locationJob: Job? = null
@@ -74,11 +74,11 @@ class TripLocationForegroundService : Service() {
 
         // CRITICAL: startForeground must be called IMMEDIATELY on the main thread
         // We show a generic notification first, then update it once trip details are loaded
-        val initialNotification = notificationHelper.buildTrackingNotification("Loading trip details...", tripId)
+        val initialNotification = notificationManager.buildTrackingNotification("Loading trip details...", tripId)
         try {
             ServiceCompat.startForeground(
                 this,
-                TripNotificationHelper.NOTIFICATION_ID,
+                TripNotificationManager.NOTIFICATION_ID,
                 initialNotification,
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
@@ -108,8 +108,8 @@ class TripLocationForegroundService : Service() {
                 // Update notification with real trip name
                 val trip = tripRepository.getTrip(tripId).firstOrNull()
                 trip?.let {
-                    val updatedNotification = notificationHelper.buildTrackingNotification(it.name, it.id)
-                    notificationHelper.updateNotification(TripNotificationHelper.NOTIFICATION_ID, updatedNotification)
+                    val updatedNotification = notificationManager.buildTrackingNotification(it.name, it.id)
+                    notificationManager.updateNotification(TripNotificationManager.NOTIFICATION_ID, updatedNotification)
                     Log.d("TripTrackingDebug", "NOTIFICATION_UPDATED: ${it.name}")
                 }
             } catch (e: Exception) {

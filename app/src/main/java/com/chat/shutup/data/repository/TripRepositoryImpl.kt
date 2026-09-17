@@ -4,6 +4,9 @@ import com.chat.shutup.data.local.TripDao
 import com.chat.shutup.data.local.TripMemberDao
 import com.chat.shutup.data.local.entity.TripMemberEntity
 import com.chat.shutup.data.remote.source.FirebaseTripDataSource
+import com.chat.shutup.feature.trip.data.service.TripAlarmScheduler
+import com.chat.shutup.feature.trip.data.service.TripNotificationManager
+import com.chat.shutup.domain.repository.AuthRepository
 import com.chat.shutup.data.mapper.toFirebaseDto
 import com.chat.shutup.data.mapper.toTrip
 import com.chat.shutup.data.mapper.toTripEntity
@@ -32,7 +35,10 @@ import javax.inject.Singleton
 class TripRepositoryImpl @Inject constructor(
     private val tripDao: TripDao,
     private val tripMemberDao: TripMemberDao,
-    private val firebaseDataSource: FirebaseTripDataSource
+    private val firebaseDataSource: FirebaseTripDataSource,
+    private val authRepository: AuthRepository,
+    private val alarmScheduler: TripAlarmScheduler,
+    private val notificationManager: TripNotificationManager
 ) : TripRepository {
 
     override suspend fun createTrip(trip: Trip) {
@@ -44,6 +50,11 @@ class TripRepositoryImpl @Inject constructor(
         
         // 2. Upload to Firebase (Split operations to satisfy security rules)
         firebaseDataSource.createTrip(trip.toFirebaseDto())
+
+        // 3. Schedule Reminder
+        if (trip.startTime != null) {
+            alarmScheduler.scheduleReminder(trip)
+        }
     }
 
     override fun getTrip(tripId: String): Flow<Trip?> {
@@ -78,6 +89,10 @@ class TripRepositoryImpl @Inject constructor(
             val trip = firebaseDataSource.getTrip(tripId)?.toTrip()
             if (trip != null) {
                 ensureTripLocal(trip)
+                // Schedule reminder if we just discovered this trip
+                if (trip.startTime != null && trip.startTime > System.currentTimeMillis()) {
+                    alarmScheduler.scheduleReminder(trip)
+                }
             }
             trip
         } catch (e: Exception) {
@@ -113,6 +128,12 @@ class TripRepositoryImpl @Inject constructor(
         // 1. Save locally
         val member = TripMember(userId, name, role, markerType = markerType)
         tripMemberDao.insertMember(member.toTripMemberEntity(tripId))
+
+        // 1.1 Schedule alarm for the trip we just joined
+        val trip = tripDao.getTripById(tripId).firstOrNull()?.toTrip()
+        if (trip != null && trip.startTime != null) {
+            alarmScheduler.scheduleReminder(trip)
+        }
         
         // 2. Upload membership to Firebase
         try {
@@ -171,6 +192,9 @@ class TripRepositoryImpl @Inject constructor(
         
         // 2. Remove from local Room
         tripMemberDao.deleteMember(tripId, userId)
+
+        // 2.1 Cancel alarm
+        alarmScheduler.cancelReminder(tripId)
         
         // 3. Delete trip locally if I'm not the creator
         if (tripEntity != null && tripEntity.creatorId != userId) {
@@ -196,8 +220,20 @@ class TripRepositoryImpl @Inject constructor(
         return firebaseDataSource.observeTripMembers(tripId)
             .map { dtos -> dtos.map { it.toTripMember() } }
             .onEach { members ->
-                // Keep local cache updated
+                val currentUserId = authRepository.currentUser?.uid
+                
+                // Get my own join time for this trip to avoid notifying for older members
+                val myMember = tripMemberDao.getMember(tripId, currentUserId ?: "")
+                val myJoinTime = myMember?.joinedAt ?: 0L
+
                 members.forEach { member ->
+                    val isNew = !tripMemberDao.isUserMemberOfTrip(tripId, member.userId)
+                    
+                    if (isNew && member.userId != currentUserId && member.joinedAt > myJoinTime && myJoinTime > 0) {
+                        // Only notify if they joined after us, and we are already a member
+                        notificationManager.showMemberJoined(tripId, member.name)
+                    }
+
                     tripMemberDao.insertMember(member.toTripMemberEntity(tripId))
                 }
             }
@@ -221,6 +257,9 @@ class TripRepositoryImpl @Inject constructor(
             // 2. Delete locally
             tripDao.deleteTrip(tripId)
             tripMemberDao.deleteMembersByTripId(tripId)
+
+            // 3. Cancel alarm
+            alarmScheduler.cancelReminder(tripId)
             
             Result.success(Unit)
         } catch (e: Exception) {
@@ -233,6 +272,17 @@ class TripRepositoryImpl @Inject constructor(
             firebaseDataSource.pushTripEvent(tripId, event)
         } catch (e: Exception) {
             android.util.Log.e("TripTrackingDebug", "Failed to push trip event: ${e.message}")
+        }
+    }
+
+    override suspend fun cancelAllAlarms() {
+        try {
+            val trips = tripDao.getAllTrips().first()
+            trips.forEach { trip ->
+                alarmScheduler.cancelReminder(trip.id)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("TripRepo", "Failed to cancel all alarms: ${e.message}")
         }
     }
 }

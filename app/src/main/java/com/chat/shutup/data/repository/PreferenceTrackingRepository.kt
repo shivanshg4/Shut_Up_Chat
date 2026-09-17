@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 import javax.inject.Singleton
+import androidx.core.content.edit
 
 @Singleton
 class PreferenceTrackingRepository @Inject constructor(
@@ -25,13 +26,13 @@ class PreferenceTrackingRepository @Inject constructor(
     override val trackingStatus: StateFlow<TrackingStatus> = _trackingStatus.asStateFlow()
 
     override fun startTracking(tripId: String) {
-        prefs.edit().putString(KEY_ACTIVE_TRIP_ID, tripId).apply()
+        prefs.edit { putString(KEY_ACTIVE_TRIP_ID, tripId) }
         _activeTripId.value = tripId
         _trackingStatus.value = TrackingStatus.TRACKING
     }
 
     override fun stopTracking() {
-        prefs.edit().remove(KEY_ACTIVE_TRIP_ID).apply()
+        prefs.edit { remove(KEY_ACTIVE_TRIP_ID) }
         _activeTripId.value = null
         _trackingStatus.value = TrackingStatus.IDLE
     }

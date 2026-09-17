@@ -5,6 +5,7 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
@@ -75,16 +76,18 @@ fun HomeEnvironment(
 
         // 3. Soft Gradient Overlay
         val bgColor = MaterialTheme.colorScheme.background
+        val isDark = isSystemInDarkTheme()
+        
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
                     brush = Brush.verticalGradient(
                         colors = listOf(
-                            Color.Black.copy(alpha = 0.15f),
+                            if (isDark) Color.Black.copy(alpha = 0.4f) else Color.Black.copy(alpha = 0.15f),
                             Color.Transparent,
                             Color.Transparent,
-                            bgColor.copy(alpha = 0.7f),
+                            if (isDark) bgColor.copy(alpha = 0.9f) else bgColor.copy(alpha = 0.7f),
                             bgColor
                         )
                     )
@@ -93,6 +96,7 @@ fun HomeEnvironment(
 
         // 4. Animated Elements
         if (isAnimated) {
+            val birdColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
             val infiniteTransition = rememberInfiniteTransition(label = "nature")
             
             // Base cloud offset (continuous)
@@ -132,7 +136,7 @@ fun HomeEnvironment(
                 }
 
                 // Draw Birds
-                drawBirds(birdFlightProgress, birdAgitation.value)
+                drawBirds(birdFlightProgress, birdAgitation.value, birdColor)
             }
         }
     }
@@ -140,11 +144,10 @@ fun HomeEnvironment(
 
 private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawBirds(
     progress: Float,
-    agitation: Float
+    agitation: Float,
+    color: Color
 ) {
-    val color = Color.DarkGray.copy(alpha = 0.4f)
-    
-    // Calculate bird position based on progress and agitation
+    // Draw bird position based on progress and agitation
     for (i in 0..2) {
         val birdOffset = i * 0.1f
         val currentProgress = (progress + birdOffset) % 1.0f

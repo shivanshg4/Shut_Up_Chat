@@ -70,7 +70,7 @@ fun IncomingCallScreen(
                     onClick = onReject,
                     modifier = Modifier
                         .size(72.dp)
-                        .background(Color.Red, CircleShape)
+                        .background(MaterialTheme.colorScheme.error, CircleShape)
                 ) {
                     Icon(
                         Icons.Default.CallEnd,
@@ -84,7 +84,7 @@ fun IncomingCallScreen(
                     onClick = onAccept,
                     modifier = Modifier
                         .size(72.dp)
-                        .background(Color.Green, CircleShape)
+                        .background(Color(0xFF2E7D32), CircleShape)
                 ) {
                     Icon(
                         Icons.Default.Call,

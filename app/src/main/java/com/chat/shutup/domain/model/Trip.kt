@@ -5,6 +5,7 @@ data class Trip(
     val name: String,
     val creatorId: String,
     val inviteCode: String,
+    val startTime: Long? = null,
     val createdAt: Long = System.currentTimeMillis(),
     val members: List<TripMember> = emptyList(),
     val origin: TripLocation? = null,

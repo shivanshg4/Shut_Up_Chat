@@ -10,6 +10,7 @@ data class CreateTripUiState(
     val tripName: String = "",
     val origin: TripLocation? = null,
     val destination: TripLocation? = null,
+    val startTime: Long? = null,
     val travelMode: TravelMode = TravelMode.DRIVING,
     val isLoading: Boolean = false,
     val error: String? = null,

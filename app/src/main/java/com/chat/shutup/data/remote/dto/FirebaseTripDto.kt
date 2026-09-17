@@ -8,6 +8,7 @@ data class FirebaseTripDto(
     val name: String = "",
     val creatorId: String = "",
     val inviteCode: String = "",
+    val startTime: Long? = null,
     val createdAt: Long = 0L,
     val members: Map<String, FirebaseTripMemberDto> = emptyMap(),
     val origin: FirebaseTripLocationDto? = null,

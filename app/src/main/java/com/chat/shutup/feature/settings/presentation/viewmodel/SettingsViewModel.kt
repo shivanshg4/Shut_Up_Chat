@@ -4,9 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.chat.shutup.domain.model.TripMarkerType
 import com.chat.shutup.domain.model.User
+import com.chat.shutup.domain.repository.AppThemeMode
 import com.chat.shutup.domain.repository.AuthRepository
 import com.chat.shutup.domain.repository.ChatRepository
 import com.chat.shutup.domain.repository.TripPreferencesRepository
+import com.chat.shutup.domain.repository.TripRepository
 import com.chat.shutup.feature.settings.presentation.state.SettingsUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,7 +21,8 @@ import javax.inject.Inject
 class SettingsViewModel @Inject constructor(
     private val chatRepository: ChatRepository,
     private val authRepository: AuthRepository,
-    private val tripPreferencesRepository: TripPreferencesRepository
+    private val tripPreferencesRepository: TripPreferencesRepository,
+    private val tripRepository: TripRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -34,7 +37,8 @@ class SettingsViewModel @Inject constructor(
         _uiState.update { 
             it.copy(
                 isBackgroundAnimationEnabled = tripPreferencesRepository.isBackgroundAnimationEnabled(),
-                isInteractiveNatureEnabled = tripPreferencesRepository.isInteractiveNatureEnabled()
+                isInteractiveNatureEnabled = tripPreferencesRepository.isInteractiveNatureEnabled(),
+                themeMode = tripPreferencesRepository.getThemeMode()
             )
         }
     }
@@ -75,6 +79,11 @@ class SettingsViewModel @Inject constructor(
         _uiState.update { it.copy(isInteractiveNatureEnabled = enabled) }
     }
 
+    fun onThemeModeSelected(mode: AppThemeMode) {
+        tripPreferencesRepository.setThemeMode(mode)
+        _uiState.update { it.copy(themeMode = mode) }
+    }
+
     fun saveSettings() {
         val user = _uiState.value.user ?: return
         viewModelScope.launch {
@@ -91,6 +100,7 @@ class SettingsViewModel @Inject constructor(
 
     fun signOut(onSignedOut: () -> Unit) {
         viewModelScope.launch {
+            tripRepository.cancelAllAlarms()
             authRepository.signOut()
             onSignedOut()
         }

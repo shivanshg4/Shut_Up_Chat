@@ -43,6 +43,9 @@ class RouteRepositoryImpl @Inject constructor(
             val packageName = context.packageName
             // Use your local SHA-1 fingerprint here (from ./gradlew signingReport)
             val certFingerprint = "595323a9dd079b4264132ce48c069549de29d714"
+            
+            // In a real production app, this fingerprint should probably also be in local.properties
+            // or handled by a secure backend that generates the request.
 
             val response = routesApi.computeRoutes(
                 apiKey = BuildConfig.Routes_API_KEY,

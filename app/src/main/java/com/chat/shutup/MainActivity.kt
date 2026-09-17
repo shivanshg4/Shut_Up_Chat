@@ -16,12 +16,15 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.LaunchedEffect
 import androidx.core.content.ContextCompat
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.chat.shutup.feature.call.manager.AgoraCallManager
 import com.chat.shutup.domain.repository.AuthRepository
+import com.chat.shutup.domain.repository.TripPreferencesRepository
+import com.chat.shutup.domain.repository.AppThemeMode
 import com.chat.shutup.domain.model.CallStatus
+import com.chat.shutup.feature.trip.data.service.TripMembershipMonitor
 import com.chat.shutup.feature.call.presentation.ActiveCallScreen
 import com.chat.shutup.feature.call.presentation.CallViewModel
 import com.chat.shutup.feature.call.presentation.IncomingCallScreen
@@ -39,14 +42,22 @@ class MainActivity : ComponentActivity() {
     lateinit var authRepository: AuthRepository
 
     @Inject
+    lateinit var tripPreferencesRepository: TripPreferencesRepository
+
+    @Inject
     lateinit var agoraCallManager: AgoraCallManager
+
+    @Inject
+    lateinit var membershipMonitor: TripMembershipMonitor
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            ShutUpChatTheme {
+            val themeMode by tripPreferencesRepository.themeMode.collectAsState(initial = AppThemeMode.SYSTEM)
+            
+            ShutUpChatTheme(themeMode = themeMode) {
                 val callViewModel: CallViewModel = hiltViewModel()
                 val callState by callViewModel.callState.collectAsState()
                 val remoteUid by callViewModel.remoteUid.collectAsState()
@@ -93,6 +104,15 @@ class MainActivity : ComponentActivity() {
                     navController = navController,
                     startDestination = startDestination
                 )
+
+                // Start monitoring trip memberships
+                LaunchedEffect(authRepository.currentUser) {
+                    if (authRepository.currentUser != null) {
+                        membershipMonitor.startMonitoring()
+                    } else {
+                        membershipMonitor.stopMonitoring()
+                    }
+                }
 
                 // Show call UI
                 callState?.let { call ->

@@ -63,7 +63,7 @@ fun ActiveCallScreen(
                     modifier = Modifier
                         .size(120.dp, 160.dp)
                         .padding(16.dp)
-                        .background(Color.DarkGray)
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                         .align(Alignment.TopEnd)
                 ) {
                     AndroidView(
@@ -91,7 +91,7 @@ fun ActiveCallScreen(
                 Text(
                     text = "Ongoing Call...",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = Color.LightGray
+                    color = Color.White.copy(alpha = 0.7f)
                 )
             }
         }
@@ -107,7 +107,7 @@ fun ActiveCallScreen(
         ) {
             IconButton(
                 onClick = { isMicOn = !isMicOn },
-                modifier = Modifier.background(if (isMicOn) Color.White.copy(0.2f) else Color.Red, CircleShape)
+                modifier = Modifier.background(if (isMicOn) Color.White.copy(0.2f) else MaterialTheme.colorScheme.error, CircleShape)
             ) {
                 Icon(
                     if (isMicOn) Icons.Default.Mic else Icons.Default.MicOff,
@@ -118,7 +118,7 @@ fun ActiveCallScreen(
 
             IconButton(
                 onClick = onEndCall,
-                modifier = Modifier.size(72.dp).background(Color.Red, CircleShape)
+                modifier = Modifier.size(72.dp).background(MaterialTheme.colorScheme.error, CircleShape)
             ) {
                 Icon(Icons.Default.CallEnd, contentDescription = "End Call", tint = Color.White, modifier = Modifier.size(32.dp))
             }
@@ -126,7 +126,7 @@ fun ActiveCallScreen(
             if (callInfo.type == CallType.VIDEO) {
                 IconButton(
                     onClick = { isVideoOn = !isVideoOn },
-                    modifier = Modifier.background(if (isVideoOn) Color.White.copy(0.2f) else Color.Red, CircleShape)
+                    modifier = Modifier.background(if (isVideoOn) Color.White.copy(0.2f) else MaterialTheme.colorScheme.error, CircleShape)
                 ) {
                     Icon(
                         if (isVideoOn) Icons.Default.Videocam else Icons.Default.VideocamOff,

@@ -31,6 +31,23 @@ android {
         manifestPlaceholders["MAPS_API_KEY"] = localProperties.getProperty("MAPS_API_KEY") ?: ""
         buildConfigField("String", "MAPS_API_KEY", "\"${localProperties.getProperty("MAPS_API_KEY") ?: ""}\"")
         buildConfigField("String", "Routes_API_KEY", "\"${localProperties.getProperty("Routes_API_KEY") ?: ""}\"")
+        buildConfigField("String", "AGORA_APP_ID", "\"${localProperties.getProperty("AGORA_APP_ID") ?: ""}\"")
+    }
+
+    flavorDimensions += "environment"
+    productFlavors {
+        create("dev") {
+            dimension = "environment"
+            // For now, we don't apply suffix to keep google-services.json working 
+            // until the user adds the new package name to the console.
+            // applicationIdSuffix = ".dev" 
+            versionNameSuffix = "-dev"
+            buildConfigField("String", "FIREBASE_DATABASE_URL", "\"https://shut-up-chat-default-rtdb.firebaseio.com\"")
+        }
+        create("prod") {
+            dimension = "environment"
+            buildConfigField("String", "FIREBASE_DATABASE_URL", "\"https://shut-up-chat-default-rtdb.firebaseio.com\"")
+        }
     }
 
     ksp {
@@ -39,11 +56,16 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+        debug {
+            // applicationIdSuffix = ".debug" // Temporarily disabled to keep Firebase working
+            isDebuggable = true
         }
     }
     compileOptions {
@@ -54,10 +76,6 @@ android {
         compose = true
         buildConfig = true
     }
-}
-
-ksp {
-    arg("room.schemaLocation", "$projectDir/schemas")
 }
 
 dependencies {
@@ -75,6 +93,7 @@ dependencies {
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     implementation(libs.hilt.navigation.compose)
+    implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
 
     // Room
     implementation(libs.room.runtime)

@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -50,7 +51,8 @@ fun ShareTripBottomSheet(
             Text(
                 text = "Share Trip",
                 style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
@@ -65,7 +67,7 @@ fun ShareTripBottomSheet(
             Surface(
                 modifier = Modifier.size(200.dp),
                 shape = MaterialTheme.shapes.medium,
-                color = MaterialTheme.colorScheme.surfaceVariant
+                color = Color.White // Keep QR background white for scanability
             ) {
                 if (qrBitmap != null) {
                     Image(
@@ -76,7 +78,7 @@ fun ShareTripBottomSheet(
                     )
                 } else {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Error generating QR")
+                        Text("Error generating QR", color = Color.Black)
                     }
                 }
             }
@@ -92,7 +94,8 @@ fun ShareTripBottomSheet(
                 text = trip.inviteCode,
                 style = MaterialTheme.typography.displaySmall,
                 fontWeight = FontWeight.Bold,
-                letterSpacing = 4.sp
+                letterSpacing = 4.sp,
+                color = MaterialTheme.colorScheme.onSurface
             )
             
             Spacer(modifier = Modifier.height(32.dp))

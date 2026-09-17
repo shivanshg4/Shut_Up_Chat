@@ -57,8 +57,8 @@ fun OutgoingCallScreen(
                     .size(80.dp)
                     .padding(bottom = 32.dp),
                 colors = IconButtonDefaults.filledIconButtonColors(
-                    containerColor = Color.Red,
-                    contentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.error,
+                    contentColor = MaterialTheme.colorScheme.onError
                 )
             ) {
                 Icon(

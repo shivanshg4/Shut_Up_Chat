@@ -312,7 +312,7 @@ private fun MessageStatusIcon(status: MessageStatus, tint: Color) {
 @Preview(showBackground = true)
 @Composable
 private fun MessageStatusIconPreview() {
-    MessageStatusIcon(MessageStatus.READ, Color.Black)
+    MessageStatusIcon(MessageStatus.READ, MaterialTheme.colorScheme.onSurfaceVariant)
 }
 private val reactionEmojis = listOf(
     "❤️",

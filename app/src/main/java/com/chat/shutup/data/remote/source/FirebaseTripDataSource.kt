@@ -1,5 +1,6 @@
 package com.chat.shutup.data.remote.source
 
+import androidx.navigation.Navigator
 import com.chat.shutup.data.remote.dto.FirebaseTripDto
 import com.chat.shutup.data.remote.dto.FirebaseTripMemberDto
 import com.chat.shutup.data.remote.dto.FirebaseTripRouteDto
@@ -12,11 +13,12 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
+import javax.inject.Named
 import javax.inject.Singleton
 
 @Singleton
 class FirebaseTripDataSource @Inject constructor(
-    private val db: FirebaseDatabase
+   private val db: FirebaseDatabase
 ) {
     private val tripsRef = db.getReference("trips")
     private val inviteCodesRef = db.getReference("tripInviteCodes")

@@ -9,14 +9,17 @@ import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.chat.shutup.R
+import com.chat.shutup.di.ChatAnnotations
 import com.chat.shutup.domain.repository.FcmRepository
-import com.chat.shutup.feature.trip.data.service.TripNotificationHelper
+import com.chat.shutup.feature.trip.data.service.TripNotificationManager
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import dagger.hilt.android.AndroidEntryPoint
+import dagger.hilt.android.scopes.ServiceScoped
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.random.Random
@@ -28,9 +31,22 @@ class ShutUpFirebaseMessagingService : FirebaseMessagingService() {
     lateinit var fcmRepository: FcmRepository
 
     @Inject
-    lateinit var tripNotificationHelper: TripNotificationHelper
+    lateinit var tripNotificationManager: TripNotificationManager
 
-    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    @Inject
+    lateinit var serviceScope : CoroutineScope
+
+    /**
+     * FUTURE BACKEND NOTE:
+     * Server-side cross-device push for trip events will use Firebase Cloud Functions + FCM 
+     * when the Firebase project is upgraded to the Blaze plan.
+     * The current implementation is designed to be compatible with that future flow.
+     */
+
+    override fun onDestroy() {
+        super.onDestroy()
+        serviceScope.cancel()
+    }
 
     override fun onNewToken(token: String) {
         super.onNewToken(token)
@@ -49,7 +65,7 @@ class ShutUpFirebaseMessagingService : FirebaseMessagingService() {
         if (type == "TRIP_TOGETHER" && tripId != null) {
             val title = message.data["title"] ?: "Trip Update"
             val body = message.data["body"] ?: ""
-            tripNotificationHelper.showEventNotification(title, body, tripId)
+            tripNotificationManager.showTripActivity(title, body, tripId)
             return
         }
 
@@ -91,7 +107,6 @@ class ShutUpFirebaseMessagingService : FirebaseMessagingService() {
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(pendingIntent)
             .build()
-
         notificationManager.notify(notificationId, notification)
     }
 }

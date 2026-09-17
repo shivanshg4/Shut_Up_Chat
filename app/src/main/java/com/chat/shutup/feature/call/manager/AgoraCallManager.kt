@@ -71,7 +71,7 @@ class AgoraCallManager @Inject constructor(
 
     private var rtcEngine: RtcEngine? = null
 
-    private val myAppId = "0a08620a21fd4bd194c2c5da40539e29"
+    private val myAppId = com.chat.shutup.BuildConfig.AGORA_APP_ID
 
     fun initEngine(
         handler: IRtcEngineEventHandler

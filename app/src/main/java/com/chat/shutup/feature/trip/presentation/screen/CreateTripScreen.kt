@@ -6,24 +6,29 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddLocation
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.chat.shutup.feature.trip.presentation.viewmodel.CreateTripViewModel
 import com.chat.shutup.ui.components.ShutUpPrimaryButton
 import com.chat.shutup.ui.components.ShutUpTextField
 import com.chat.shutup.ui.components.ShutUpTopBar
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateTripScreen(
     onBackClick: () -> Unit,
@@ -32,6 +37,52 @@ fun CreateTripScreen(
     viewModel: CreateTripViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    
+    var showDatePicker by remember { mutableStateOf(false) }
+    var showTimePicker by remember { mutableStateOf(false) }
+    
+    val datePickerState = rememberDatePickerState()
+    val timePickerState = rememberTimePickerState()
+
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDatePicker = false
+                    showTimePicker = true
+                }) { Text("Next") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) { Text("Cancel") }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+
+    if (showTimePicker) {
+        AlertDialog(
+            onDismissRequest = { showTimePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    val calendar = Calendar.getInstance()
+                    datePickerState.selectedDateMillis?.let { calendar.timeInMillis = it }
+                    calendar.set(Calendar.HOUR_OF_DAY, timePickerState.hour)
+                    calendar.set(Calendar.MINUTE, timePickerState.minute)
+                    viewModel.onStartTimeChange(calendar.timeInMillis)
+                    showTimePicker = false
+                }) { Text("Confirm") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showTimePicker = false }) { Text("Cancel") }
+            },
+            title = { Text("Select Start Time") },
+            text = {
+                TimePicker(state = timePickerState)
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -96,6 +147,41 @@ fun CreateTripScreen(
                         )
                     }
                 )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Text("Start Date & Time (Optional)", style = MaterialTheme.typography.labelLarge, modifier = Modifier.fillMaxWidth())
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = { showDatePicker = true },
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CalendarMonth,
+                            contentDescription = null,
+                            tint = if (uiState.startTime != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+                        )
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Text(
+                            text = uiState.startTime?.let {
+                                SimpleDateFormat("MMM dd, yyyy - hh:mm a", Locale.getDefault()).format(Date(it))
+                            } ?: "Select date and time",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = if (uiState.startTime != null) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.outline
+                        )
+                        Spacer(modifier = Modifier.weight(1f))
+                        if (uiState.startTime != null) {
+                            IconButton(onClick = { viewModel.onStartTimeChange(null) }) {
+                                Icon(Icons.Default.Schedule, contentDescription = "Clear", tint = MaterialTheme.colorScheme.error)
+                            }
+                        }
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(24.dp))
                 

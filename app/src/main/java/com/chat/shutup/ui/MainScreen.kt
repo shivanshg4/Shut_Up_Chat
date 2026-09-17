@@ -10,7 +10,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -34,12 +33,13 @@ fun MainScreen(
     val navController = rememberNavController()
     
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
             val navBackStackEntry by navController.currentBackStackEntryAsState()
             val currentDestination = navBackStackEntry?.destination
             
             NavigationBar(
-                containerColor = Color.White,
+                containerColor = MaterialTheme.colorScheme.surface,
                 tonalElevation = 8.dp
             ) {
                 NavigationBarItem(
@@ -54,9 +54,11 @@ fun MainScreen(
                     icon = { Icon(Icons.Default.Explore, contentDescription = null) },
                     label = { Text("Trips") },
                     colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = Color(0xFF2E7D32),
-                        selectedTextColor = Color(0xFF2E7D32),
-                        indicatorColor = Color(0xFFE8F5E9)
+                        selectedIconColor = MaterialTheme.colorScheme.primary,
+                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                        indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 )
                 
@@ -72,16 +74,16 @@ fun MainScreen(
                     icon = { Icon(Icons.Default.Settings, contentDescription = null) },
                     label = { Text("Settings") },
                     colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = Color(0xFF2E7D32),
-                        selectedTextColor = Color(0xFF2E7D32),
-                        indicatorColor = Color(0xFFE8F5E9)
+                        selectedIconColor = MaterialTheme.colorScheme.primary,
+                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                        indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 )
             }
         }
     ) { innerPadding ->
-        // We handle innerPadding (bottom bar height) within the NavHost content
-        // to allow the background gradient in Trips to extend to the very top.
         Box(modifier = Modifier.fillMaxSize()) {
             NavHost(
                 navController = navController,
@@ -100,7 +102,6 @@ fun MainScreen(
                 }
                 composable<Screen.Settings> {
                     SettingsScreen(
-                        /*onBackClick = { *//* Handled by bottom bar *//* },*/
                         onSignedOut = onSignedOut,
                         bottomPadding = innerPadding.calculateBottomPadding()
                     )
