@@ -18,7 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.chat.shutup.domain.model.TripLocation
+import com.chat.shutup.feature.trip.domain.model.TripLocation
 import com.chat.shutup.feature.trip.presentation.viewmodel.LocationPickerViewModel
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition

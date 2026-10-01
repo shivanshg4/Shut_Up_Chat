@@ -19,10 +19,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.chat.shutup.core.designsystem.components.ShutUpPrimaryButton
+import com.chat.shutup.core.designsystem.components.ShutUpTextField
+import com.chat.shutup.core.designsystem.components.ShutUpTopBar
+import com.chat.shutup.feature.trip.domain.model.TravelMode
+import com.chat.shutup.feature.trip.domain.model.TripLocation
 import com.chat.shutup.feature.trip.presentation.viewmodel.CreateTripViewModel
-import com.chat.shutup.ui.components.ShutUpPrimaryButton
-import com.chat.shutup.ui.components.ShutUpTextField
-import com.chat.shutup.ui.components.ShutUpTopBar
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -191,7 +193,7 @@ fun CreateTripScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    com.chat.shutup.domain.model.TravelMode.entries.forEach { mode ->
+                    TravelMode.entries.forEach { mode ->
                         FilterChip(
                             selected = uiState.travelMode == mode,
                             onClick = { viewModel.onTravelModeChange(mode) },
@@ -231,7 +233,7 @@ fun CreateTripScreen(
 @Composable
 fun LocationSelectionSection(
     label: String,
-    location: com.chat.shutup.domain.model.TripLocation?,
+    location: TripLocation?,
     onSelectClick: () -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {

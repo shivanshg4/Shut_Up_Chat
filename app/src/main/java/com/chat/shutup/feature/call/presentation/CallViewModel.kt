@@ -3,9 +3,9 @@ package com.chat.shutup.feature.call.presentation
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.chat.shutup.domain.model.CallInfo
-import com.chat.shutup.domain.model.CallStatus
-import com.chat.shutup.domain.repository.ChatRepository
+import com.chat.shutup.feature.call.domain.model.CallInfo
+import com.chat.shutup.feature.call.domain.model.CallStatus
+import com.chat.shutup.feature.chat.domain.repository.ChatRepository
 import com.chat.shutup.feature.call.manager.AgoraCallManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.agora.rtc2.IRtcEngineEventHandler

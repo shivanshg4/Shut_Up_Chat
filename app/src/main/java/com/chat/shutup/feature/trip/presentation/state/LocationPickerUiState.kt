@@ -1,6 +1,6 @@
 package com.chat.shutup.feature.trip.presentation.state
 
-import com.chat.shutup.domain.model.TripLocation
+import com.chat.shutup.feature.trip.domain.model.TripLocation
 
 data class LocationPickerUiState(
     val query: String = "",

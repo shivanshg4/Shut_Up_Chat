@@ -15,12 +15,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.chat.shutup.core.designsystem.components.ShutUpPrimaryButton
+import com.chat.shutup.core.designsystem.components.ShutUpSecondaryButton
+import com.chat.shutup.core.designsystem.components.ShutUpTextField
+import com.chat.shutup.core.designsystem.components.ShutUpTopBar
 import com.chat.shutup.feature.trip.presentation.screen.components.QRScanner
 import com.chat.shutup.feature.trip.presentation.viewmodel.JoinTripViewModel
-import com.chat.shutup.ui.components.ShutUpPrimaryButton
-import com.chat.shutup.ui.components.ShutUpSecondaryButton
-import com.chat.shutup.ui.components.ShutUpTextField
-import com.chat.shutup.ui.components.ShutUpTopBar
 
 @Composable
 fun JoinTripScreen(

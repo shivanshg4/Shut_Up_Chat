@@ -17,8 +17,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import com.chat.shutup.domain.model.CallInfo
-import com.chat.shutup.domain.model.CallType
+import com.chat.shutup.feature.call.domain.model.CallInfo
+import com.chat.shutup.feature.call.domain.model.CallType
 import com.chat.shutup.feature.call.manager.AgoraCallManager
 
 @Composable

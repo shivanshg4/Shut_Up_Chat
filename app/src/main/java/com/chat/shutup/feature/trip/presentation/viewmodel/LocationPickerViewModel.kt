@@ -2,8 +2,8 @@ package com.chat.shutup.feature.trip.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.chat.shutup.domain.model.TripLocation
-import com.chat.shutup.domain.repository.LocationSearchRepository
+import com.chat.shutup.feature.trip.domain.model.TripLocation
+import com.chat.shutup.feature.trip.domain.repository.LocationSearchRepository
 import com.chat.shutup.feature.trip.presentation.state.LocationPickerUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job

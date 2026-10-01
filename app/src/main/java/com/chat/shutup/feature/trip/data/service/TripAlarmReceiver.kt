@@ -3,6 +3,7 @@ package com.chat.shutup.feature.trip.data.service
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import com.chat.shutup.core.notifications.TripNotificationManager
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 

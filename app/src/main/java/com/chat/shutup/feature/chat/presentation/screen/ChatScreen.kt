@@ -21,6 +21,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.chat.shutup.core.designsystem.components.chat.ChatTopBar
+import com.chat.shutup.core.designsystem.components.chat.MessageBubble
+import com.chat.shutup.core.designsystem.components.chat.MessageComposer
+import com.chat.shutup.core.designsystem.components.chat.TypingIndicator
+import com.chat.shutup.core.designsystem.theme.AppTheme
+import com.chat.shutup.core.designsystem.theme.ShutUpChatTheme
 import com.chat.shutup.feature.chat.domain.model.ChatDetail
 import com.chat.shutup.feature.chat.domain.model.Message
 import com.chat.shutup.feature.chat.domain.model.MessageStatus
@@ -29,12 +35,6 @@ import com.chat.shutup.feature.chat.presentation.ChatViewModel
 import com.chat.shutup.feature.chat.presentation.effect.ChatUiEffect
 import com.chat.shutup.feature.chat.presentation.event.ChatUiEvent
 import com.chat.shutup.feature.chat.presentation.state.ChatUiState
-import com.chat.shutup.ui.components.chat.ChatTopBar
-import com.chat.shutup.ui.components.chat.MessageBubble
-import com.chat.shutup.ui.components.chat.MessageComposer
-import com.chat.shutup.ui.components.chat.TypingIndicator
-import com.chat.shutup.ui.theme.AppTheme
-import com.chat.shutup.ui.theme.ShutUpChatTheme
 import kotlinx.coroutines.flow.collectLatest
 
 @Composable

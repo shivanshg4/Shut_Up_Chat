@@ -1,7 +1,7 @@
 package com.chat.shutup.feature.settings.presentation.state
 
-import com.chat.shutup.domain.model.User
-import com.chat.shutup.domain.repository.AppThemeMode
+import com.chat.shutup.feature.auth.domain.model.User
+import com.chat.shutup.feature.trip.domain.repository.AppThemeMode
 
 data class SettingsUiState(
     val user: User? = null,

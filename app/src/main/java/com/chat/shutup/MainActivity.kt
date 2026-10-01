@@ -20,24 +20,23 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.chat.shutup.feature.call.manager.AgoraCallManager
-import com.chat.shutup.domain.repository.AuthRepository
-import com.chat.shutup.domain.repository.TripPreferencesRepository
-import com.chat.shutup.domain.repository.AppThemeMode
-import com.chat.shutup.domain.model.CallStatus
+import com.chat.shutup.feature.auth.domain.repository.AuthRepository
+import com.chat.shutup.feature.trip.domain.repository.TripPreferencesRepository
+import com.chat.shutup.feature.trip.domain.repository.AppThemeMode
+import com.chat.shutup.feature.call.domain.model.CallStatus
 import com.chat.shutup.feature.trip.data.service.TripMembershipMonitor
 import com.chat.shutup.feature.call.presentation.ActiveCallScreen
 import com.chat.shutup.feature.call.presentation.CallViewModel
 import com.chat.shutup.feature.call.presentation.IncomingCallScreen
 import com.chat.shutup.feature.call.presentation.OutgoingCallScreen
-import com.chat.shutup.ui.navigation.AppNavHost
-import com.chat.shutup.ui.navigation.Screen
-import com.chat.shutup.ui.theme.ShutUpChatTheme
+import com.chat.shutup.core.navigation.AppNavHost
+import com.chat.shutup.core.navigation.Screen
+import com.chat.shutup.core.designsystem.theme.ShutUpChatTheme
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-
     @Inject
     lateinit var authRepository: AuthRepository
 

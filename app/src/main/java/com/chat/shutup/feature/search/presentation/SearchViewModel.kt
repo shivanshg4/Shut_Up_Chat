@@ -2,8 +2,8 @@ package com.chat.shutup.feature.search.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.chat.shutup.domain.model.User
-import com.chat.shutup.domain.repository.ChatRepository
+import com.chat.shutup.feature.auth.domain.model.User
+import com.chat.shutup.feature.chat.domain.repository.ChatRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow

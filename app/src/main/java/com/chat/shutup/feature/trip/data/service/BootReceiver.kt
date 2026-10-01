@@ -3,7 +3,7 @@ package com.chat.shutup.feature.trip.data.service
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import com.chat.shutup.domain.repository.TripRepository
+import com.chat.shutup.feature.trip.domain.repository.TripRepository
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

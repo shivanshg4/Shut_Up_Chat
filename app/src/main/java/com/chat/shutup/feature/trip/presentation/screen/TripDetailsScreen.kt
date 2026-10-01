@@ -45,11 +45,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.chat.shutup.core.designsystem.components.ShutUpPrimaryButton
+import com.chat.shutup.core.designsystem.components.ShutUpSecondaryButton
+import com.chat.shutup.core.designsystem.components.ShutUpTopBar
+import com.chat.shutup.feature.trip.domain.model.TravelMode
+import com.chat.shutup.feature.trip.domain.model.TripRole
 import com.chat.shutup.feature.trip.presentation.screen.components.ShareTripBottomSheet
 import com.chat.shutup.feature.trip.presentation.viewmodel.TripDetailsViewModel
-import com.chat.shutup.ui.components.ShutUpPrimaryButton
-import com.chat.shutup.ui.components.ShutUpSecondaryButton
-import com.chat.shutup.ui.components.ShutUpTopBar
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -220,10 +222,10 @@ fun TripDetailsScreen(
                             Spacer(modifier = Modifier.height(16.dp))
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 val modeIcon = when(trip.travelMode) {
-                                    com.chat.shutup.domain.model.TravelMode.DRIVING -> "🚗"
-                                    com.chat.shutup.domain.model.TravelMode.WALKING -> "🚶"
-                                    com.chat.shutup.domain.model.TravelMode.BICYCLING -> "🚲"
-                                    com.chat.shutup.domain.model.TravelMode.TRANSIT -> "🚌"
+                                    TravelMode.DRIVING -> "🚗"
+                                    TravelMode.WALKING -> "🚶"
+                                    TravelMode.BICYCLING -> "🚲"
+                                    TravelMode.TRANSIT -> "🚌"
                                 }
                                 Text(modeIcon, style = MaterialTheme.typography.titleMedium)
                                 Spacer(modifier = Modifier.width(12.dp))
@@ -277,7 +279,7 @@ fun TripDetailsScreen(
                     
                     Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         trip.members.forEach { member ->
-                            val roleText = if (member.role == com.chat.shutup.domain.model.TripRole.CREATOR) "Creator" else "Member"
+                            val roleText = if (member.role == TripRole.CREATOR) "Creator" else "Member"
                             val isMe = member.userId == viewModel.currentUserId
                             Row(
                                 modifier = Modifier

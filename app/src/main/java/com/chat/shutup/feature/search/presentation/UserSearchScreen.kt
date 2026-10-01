@@ -13,8 +13,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.chat.shutup.domain.model.User
-import com.chat.shutup.ui.components.Avatar
+import com.chat.shutup.feature.auth.domain.model.User
+import com.chat.shutup.core.designsystem.components.Avatar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

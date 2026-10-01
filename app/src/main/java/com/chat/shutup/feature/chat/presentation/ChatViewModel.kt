@@ -3,8 +3,9 @@ package com.chat.shutup.feature.chat.presentation
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.chat.shutup.domain.repository.AuthRepository
-import com.chat.shutup.domain.repository.ChatRepository
+import com.chat.shutup.feature.auth.domain.repository.AuthRepository
+import com.chat.shutup.feature.chat.domain.repository.ChatRepository
+import com.chat.shutup.feature.call.domain.model.CallType
 import com.chat.shutup.feature.chat.domain.model.ChatDetail
 import com.chat.shutup.feature.chat.domain.model.Message
 import com.chat.shutup.feature.chat.domain.model.MessageStatus
@@ -86,8 +87,8 @@ class ChatViewModel @Inject constructor(
             ChatUiEvent.OnBackClick -> {
                 viewModelScope.launch { _uiEffect.send(ChatUiEffect.NavigateBack) }
             }
-            ChatUiEvent.OnCallClick -> initiateCall(com.chat.shutup.domain.model.CallType.VOICE)
-            ChatUiEvent.OnVideoCallClick -> initiateCall(com.chat.shutup.domain.model.CallType.VIDEO)
+            ChatUiEvent.OnCallClick -> initiateCall(CallType.VOICE)
+            ChatUiEvent.OnVideoCallClick -> initiateCall(CallType.VIDEO)
             ChatUiEvent.OnAttachmentClick -> {
                 viewModelScope.launch { _uiEffect.send(ChatUiEffect.OpenImagePicker) }
             }
@@ -134,7 +135,7 @@ class ChatViewModel @Inject constructor(
         }
     }
 
-    private fun initiateCall(type: com.chat.shutup.domain.model.CallType) {
+    private fun initiateCall(type: CallType) {
         val chatDetail = _uiState.value.chatDetail ?: return
         viewModelScope.launch {
             // In a real app, we'd find the participantId from the chat participants

@@ -1,7 +1,8 @@
 package com.chat.shutup.domain.util
 
-import com.chat.shutup.domain.model.LocationPoint
-import com.chat.shutup.domain.model.RoutePoint
+import com.chat.shutup.core.location.model.LocationPoint
+import com.chat.shutup.feature.trip.domain.model.RoutePoint
+import com.chat.shutup.feature.trip.domain.util.RouteProgressCalculator
 import org.junit.Assert.*
 import org.junit.Test
 

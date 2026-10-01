@@ -1,8 +1,8 @@
 package com.chat.shutup.feature.trip.presentation.state
 
-import com.chat.shutup.domain.model.TravelMode
-import com.chat.shutup.domain.model.Trip
-import com.chat.shutup.domain.model.TripLocation
+import com.chat.shutup.feature.trip.domain.model.TravelMode
+import com.chat.shutup.feature.trip.domain.model.Trip
+import com.chat.shutup.feature.trip.domain.model.TripLocation
 
 data class CreateTripUiState(
     val tripId: String = "",

@@ -23,8 +23,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.chat.shutup.domain.model.Trip
-import com.chat.shutup.domain.util.QRCodeGenerator
+import com.chat.shutup.feature.trip.domain.model.Trip
+import com.chat.shutup.core.common.QRCodeGenerator
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

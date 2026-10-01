@@ -1,11 +1,11 @@
 package com.chat.shutup.feature.trip.presentation.state
 
-import com.chat.shutup.domain.model.LocationPoint
-import com.chat.shutup.domain.model.MemberRouteProgress
-import com.chat.shutup.domain.model.Trip
-import com.chat.shutup.domain.model.TripMember
-import com.chat.shutup.domain.model.TripRoute
-import com.chat.shutup.domain.repository.TrackingStatus
+import com.chat.shutup.core.location.model.LocationPoint
+import com.chat.shutup.feature.trip.domain.model.MemberRouteProgress
+import com.chat.shutup.feature.trip.domain.model.Trip
+import com.chat.shutup.feature.trip.domain.model.TripMember
+import com.chat.shutup.feature.trip.domain.model.TripRoute
+import com.chat.shutup.feature.trip.domain.repository.TrackingStatus
 import com.chat.shutup.feature.chat.domain.model.Message
 import com.google.android.gms.maps.model.LatLng
 

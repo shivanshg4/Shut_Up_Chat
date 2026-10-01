@@ -1,0 +1,290 @@
+package com.chat.shutup.feature.trip.data
+
+import com.chat.shutup.feature.trip.data.local.dao.TripDao
+import com.chat.shutup.feature.trip.data.local.dao.TripMemberDao
+import com.chat.shutup.feature.trip.data.local.entity.TripMemberEntity
+import com.chat.shutup.feature.trip.data.remote.FirebaseTripDataSource
+import com.chat.shutup.feature.trip.data.service.TripAlarmScheduler
+import com.chat.shutup.core.notifications.TripNotificationManager
+import com.chat.shutup.feature.auth.domain.repository.AuthRepository
+import com.chat.shutup.feature.trip.data.mapper.toFirebaseDto
+import com.chat.shutup.feature.trip.data.mapper.toTrip
+import com.chat.shutup.feature.trip.data.mapper.toTripEntity
+import com.chat.shutup.feature.trip.data.mapper.toTripMember
+import com.chat.shutup.feature.trip.data.mapper.toTripMemberEntity
+import com.chat.shutup.feature.trip.domain.model.Trip
+import com.chat.shutup.feature.trip.domain.model.TripNotificationData
+import com.chat.shutup.feature.trip.domain.model.TripNotificationType
+import com.chat.shutup.feature.trip.domain.model.TripMarkerType
+import com.chat.shutup.feature.trip.domain.model.TripMember
+import com.chat.shutup.feature.trip.domain.model.TripRole
+import com.chat.shutup.feature.trip.domain.repository.TripRepository
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@OptIn(ExperimentalCoroutinesApi::class)
+@Singleton
+class TripRepositoryImpl @Inject constructor(
+    private val tripDao: TripDao,
+    private val tripMemberDao: TripMemberDao,
+    private val firebaseDataSource: FirebaseTripDataSource,
+    private val authRepository: AuthRepository,
+    private val alarmScheduler: TripAlarmScheduler,
+    private val notificationManager: TripNotificationManager
+) : TripRepository {
+
+    override suspend fun createTrip(trip: Trip) {
+        // 1. Save locally (Always overwrite with latest Trip data)
+        tripDao.insertTrip(trip.toTripEntity())
+        trip.members.forEach { member ->
+            tripMemberDao.insertMember(member.toTripMemberEntity(trip.id))
+        }
+        
+        // 2. Upload to Firebase (Split operations to satisfy security rules)
+        firebaseDataSource.createTrip(trip.toFirebaseDto())
+
+        // 3. Schedule Reminder
+        if (trip.startTime != null) {
+            alarmScheduler.scheduleReminder(trip)
+        }
+    }
+
+    override fun getTrip(tripId: String): Flow<Trip?> {
+        return tripDao.getTripById(tripId).combine(
+            tripMemberDao.getMembersForTrip(tripId)
+        ) { entity, memberEntities ->
+            entity?.toTrip(memberEntities.map { it.toTripMember() })
+        }
+    }
+
+    override fun getTripsByCreator(creatorId: String): Flow<List<Trip>> {
+        return tripDao.getTripsByCreator(creatorId).map { entities ->
+            entities.map { it.toTrip() }
+        }
+    }
+
+    override suspend fun getTripIdByInviteCode(inviteCode: String): String? {
+        val localTrip = tripDao.getTripByInviteCode(inviteCode.uppercase())
+        if (localTrip != null) return localTrip.id
+        
+        return firebaseDataSource.getTripIdByInviteCode(inviteCode)
+    }
+
+    override suspend fun getTripByInviteCode(inviteCode: String): Trip? {
+        // 1. Check local first
+        val localTrip = tripDao.getTripByInviteCode(inviteCode.uppercase())
+        if (localTrip != null) return localTrip.toTrip()
+        
+        // 2. Check Firebase
+        val tripId = getTripIdByInviteCode(inviteCode) ?: return null
+        return try {
+            val trip = firebaseDataSource.getTrip(tripId)?.toTrip()
+            if (trip != null) {
+                ensureTripLocal(trip)
+                // Schedule reminder if we just discovered this trip
+                if (trip.startTime != null && trip.startTime > System.currentTimeMillis()) {
+                    alarmScheduler.scheduleReminder(trip)
+                }
+            }
+            trip
+        } catch (e: Exception) {
+            // Log or handle permission denied
+            null
+        }
+    }
+
+    override fun getAllTrips(): Flow<List<Trip>> {
+        return tripDao.getAllTrips().map { entities ->
+            entities.map { it.toTrip() }
+        }
+    }
+
+    override fun getUserTrips(userId: String): Flow<List<Trip>> {
+        return tripMemberDao.getTripIdsForUser(userId).flatMapLatest { tripIds ->
+            if (tripIds.isEmpty()) return@flatMapLatest flowOf(emptyList<Trip>())
+            
+            val tripFlows = tripIds.map { tripId -> getTrip(tripId) }
+            combine(tripFlows) { trips ->
+                trips.filterNotNull()
+            }
+        }
+    }
+
+    override suspend fun joinTrip(
+        tripId: String,
+        userId: String,
+        name: String,
+        role: TripRole,
+        markerType: TripMarkerType
+    ) {
+        // 1. Save locally
+        val member = TripMember(userId, name, role, markerType = markerType)
+        tripMemberDao.insertMember(member.toTripMemberEntity(tripId))
+
+        // 1.1 Schedule alarm for the trip we just joined
+        val trip = tripDao.getTripById(tripId).firstOrNull()?.toTrip()
+        if (trip != null && trip.startTime != null) {
+            alarmScheduler.scheduleReminder(trip)
+        }
+        
+        // 2. Upload membership to Firebase
+        try {
+            firebaseDataSource.addMember(tripId, member.toFirebaseDto())
+        } catch (e: Exception) {
+            android.util.Log.e("TripTrackingDebug", "Failed to upload membership: ${e.message}")
+        }
+
+        // 3. Push Event
+        pushTripEvent(
+            tripId,
+            com.chat.shutup.feature.trip.domain.model.TripNotificationData(
+                type = com.chat.shutup.feature.trip.domain.model.TripNotificationType.MEMBER_JOINED,
+                tripId = tripId,
+                tripName = "", // To be filled by backend or using current context
+                actorUserId = userId,
+                actorName = name,
+                title = "New Member",
+                body = "$name joined the trip"
+            )
+        )
+    }
+
+    override suspend fun updateTripRoute(tripId: String, route: com.chat.shutup.feature.trip.domain.model.TripRoute) {
+        // 1. Update locally
+        val trip = tripDao.getTripById(tripId).firstOrNull()?.toTrip() ?: return
+        val updatedTrip = trip.copy(route = route)
+        tripDao.insertTrip(updatedTrip.toTripEntity())
+
+        // 2. Update Firebase
+        try {
+            firebaseDataSource.updateTripRoute(tripId, route.toFirebaseDto())
+        } catch (e: Exception) {
+            android.util.Log.e("TripTrackingDebug", "Failed to update trip route: ${e.message}")
+        }
+    }
+    
+    override suspend fun ensureTripLocal(trip: Trip) {
+        tripDao.insertTrip(trip.toTripEntity())
+        trip.members.forEach { member ->
+            tripMemberDao.insertMember(member.toTripMemberEntity(trip.id))
+        }
+    }
+
+    override suspend fun leaveTrip(tripId: String, userId: String): Result<Unit> = runCatching {
+        // Get member info before deleting for notification
+        val members = tripMemberDao.getMembersForTrip(tripId).first()
+        val me = members.find { it.userId == userId }
+        val myName = me?.name ?: "A member"
+        
+        val tripEntity = tripDao.getTripById(tripId).first()
+        val tripName = tripEntity?.name ?: ""
+
+        // 1. Remove from Firebase
+        firebaseDataSource.removeMember(tripId, userId)
+        
+        // 2. Remove from local Room
+        tripMemberDao.deleteMember(tripId, userId)
+
+        // 2.1 Cancel alarm
+        alarmScheduler.cancelReminder(tripId)
+        
+        // 3. Delete trip locally if I'm not the creator
+        if (tripEntity != null && tripEntity.creatorId != userId) {
+            tripDao.deleteTrip(tripId)
+        }
+        
+        // 4. Push Event
+        pushTripEvent(
+            tripId,
+            com.chat.shutup.feature.trip.domain.model.TripNotificationData(
+                type = com.chat.shutup.feature.trip.domain.model.TripNotificationType.MEMBER_LEFT,
+                tripId = tripId,
+                tripName = tripName,
+                actorUserId = userId,
+                actorName = myName,
+                title = "Member Left",
+                body = "$myName has left the trip"
+            )
+        )
+    }
+
+    override fun getTripMembers(tripId: String): Flow<List<TripMember>> {
+        return firebaseDataSource.observeTripMembers(tripId)
+            .map { dtos -> dtos.map { it.toTripMember() } }
+            .onEach { members ->
+                val currentUserId = authRepository.currentUser?.uid
+                
+                // Get my own join time for this trip to avoid notifying for older members
+                val myMember = tripMemberDao.getMember(tripId, currentUserId ?: "")
+                val myJoinTime = myMember?.joinedAt ?: 0L
+
+                members.forEach { member ->
+                    val isNew = !tripMemberDao.isUserMemberOfTrip(tripId, member.userId)
+                    
+                    if (isNew && member.userId != currentUserId && member.joinedAt > myJoinTime && myJoinTime > 0) {
+                        // Only notify if they joined after us, and we are already a member
+                        notificationManager.showMemberJoined(tripId, member.name)
+                    }
+
+                    tripMemberDao.insertMember(member.toTripMemberEntity(tripId))
+                }
+            }
+            .catch { e ->
+                android.util.Log.e("TripRepo", "Error observing members: ${e.message}")
+                emit(emptyList())
+            }
+    }
+
+    override suspend fun isUserMemberOfTrip(tripId: String, userId: String): Boolean {
+        return tripMemberDao.isUserMemberOfTrip(tripId, userId)
+    }
+
+    override suspend fun deleteTrip(tripId: String): Result<Unit> {
+        return try {
+            val trip = tripDao.getTripById(tripId).firstOrNull() ?: return Result.failure(Exception("Trip not found"))
+            
+            // 1. Delete from Firebase
+            firebaseDataSource.deleteTrip(tripId, trip.inviteCode)
+            
+            // 2. Delete locally
+            tripDao.deleteTrip(tripId)
+            tripMemberDao.deleteMembersByTripId(tripId)
+
+            // 3. Cancel alarm
+            alarmScheduler.cancelReminder(tripId)
+            
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun pushTripEvent(tripId: String, event: com.chat.shutup.feature.trip.domain.model.TripNotificationData) {
+        try {
+            firebaseDataSource.pushTripEvent(tripId, event)
+        } catch (e: Exception) {
+            android.util.Log.e("TripTrackingDebug", "Failed to push trip event: ${e.message}")
+        }
+    }
+
+    override suspend fun cancelAllAlarms() {
+        try {
+            val trips = tripDao.getAllTrips().first()
+            trips.forEach { trip ->
+                alarmScheduler.cancelReminder(trip.id)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("TripRepo", "Failed to cancel all alarms: ${e.message}")
+        }
+    }
+}

@@ -2,15 +2,15 @@ package com.chat.shutup.feature.trip.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.chat.shutup.domain.model.TravelMode
-import com.chat.shutup.domain.model.Trip
-import com.chat.shutup.domain.model.TripLocation
-import com.chat.shutup.domain.model.TripMember
-import com.chat.shutup.domain.model.TripRole
-import com.chat.shutup.domain.model.TripMarkerType
-import com.chat.shutup.domain.repository.AuthRepository
-import com.chat.shutup.domain.repository.ChatRepository
-import com.chat.shutup.domain.repository.TripRepository
+import com.chat.shutup.feature.trip.domain.model.TravelMode
+import com.chat.shutup.feature.trip.domain.model.Trip
+import com.chat.shutup.feature.trip.domain.model.TripLocation
+import com.chat.shutup.feature.trip.domain.model.TripMember
+import com.chat.shutup.feature.trip.domain.model.TripRole
+import com.chat.shutup.feature.trip.domain.model.TripMarkerType
+import com.chat.shutup.feature.auth.domain.repository.AuthRepository
+import com.chat.shutup.feature.chat.domain.repository.ChatRepository
+import com.chat.shutup.feature.trip.domain.repository.TripRepository
 import com.chat.shutup.feature.trip.presentation.state.CreateTripUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow

@@ -28,6 +28,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -38,9 +40,9 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.chat.shutup.R
 import com.chat.shutup.feature.trip.presentation.screen.components.HomeEnvironment
-import com.chat.shutup.ui.components.ShutUpPrimaryButton
-import com.chat.shutup.ui.components.ShutUpSecondaryButton
-import com.chat.shutup.ui.theme.ShutUpChatTheme
+import com.chat.shutup.core.designsystem.components.ShutUpPrimaryButton
+import com.chat.shutup.core.designsystem.components.ShutUpSecondaryButton
+import com.chat.shutup.core.designsystem.theme.ShutUpChatTheme
 import com.facebook.CallbackManager
 import com.facebook.FacebookCallback
 import com.facebook.FacebookException
@@ -57,7 +59,7 @@ fun LoginScreen(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     val callbackManager = remember { CallbackManager.Factory.create() }
-    
+
     val loginLauncher = rememberLauncherForActivityResult(
         contract = LoginManager.getInstance().createLogInActivityResultContract(callbackManager),
         onResult = {}
@@ -104,10 +106,14 @@ fun LoginContent(
     onGuestSignIn: () -> Unit,
     onClearError: () -> Unit
 ) {
-    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .background(MaterialTheme.colorScheme.background)) {
         // 1. Nature/travel visual area (Matching Home Screen)
         HomeEnvironment(
-            modifier = Modifier.fillMaxWidth().height(360.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(360.dp),
             isAnimated = true,
             isInteractive = false
         )
@@ -122,25 +128,25 @@ fun LoginContent(
             Spacer(modifier = Modifier.height(280.dp))
 
             // 2. ShutUp Trips Together
-           /* Image(
-                painter = painterResource(id = R.drawable.logo),
-                contentDescription = "ShutUp Logo",
-                modifier = Modifier.size(100.dp)
-            )*/
+            /* Image(
+                 painter = painterResource(id = R.drawable.logo),
+                 contentDescription = "ShutUp Logo",
+                 modifier = Modifier.size(100.dp)
+             )*/
             Spacer(modifier = Modifier.height(16.dp))
-           /* Text(
-                text = "ShutUp",
-                style = MaterialTheme.typography.displaySmall,
-                color = MaterialTheme.colorScheme.onBackground,
-                fontWeight = FontWeight.Black
-            )
-            Text(
-                text = "Trips Together",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Normal,
-                modifier = Modifier.offset(y = (-4).dp)
-            )*/
+            /* Text(
+                 text = "ShutUp",
+                 style = MaterialTheme.typography.displaySmall,
+                 color = MaterialTheme.colorScheme.onBackground,
+                 fontWeight = FontWeight.Black
+             )
+             Text(
+                 text = "Trips Together",
+                 style = MaterialTheme.typography.titleMedium,
+                 color = MaterialTheme.colorScheme.primary,
+                 fontWeight = FontWeight.Normal,
+                 modifier = Modifier.offset(y = (-4).dp)
+             )*/
 
             Spacer(modifier = Modifier.height(48.dp))
 
@@ -152,9 +158,9 @@ fun LoginContent(
                 fontWeight = FontWeight.Bold,
                 lineHeight = 32.sp
             )
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             Text(
                 text = "Share live locations, chat in real-time, and never lose your group again.",
                 style = MaterialTheme.typography.bodyLarge,
@@ -194,10 +200,15 @@ fun LoginContent(
         }
 
         if (uiState.isLoading) {
-            CircularProgressIndicator(
-                modifier = Modifier.align(Alignment.Center),
-                color = MaterialTheme.colorScheme.primary
-            )
+            Box(modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(Unit) {}
+                .background(Color.Black.copy(alpha = 0.4f)),
+                contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
         }
 
         uiState.error?.let { error ->

@@ -8,27 +8,30 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import android.util.Log
-import com.chat.shutup.domain.repository.AuthRepository
-import com.chat.shutup.domain.repository.LocationClient
-import com.chat.shutup.domain.repository.RouteRepository
-import com.chat.shutup.domain.repository.TrackingRepository
-import com.chat.shutup.domain.repository.TrackingStatus
-import com.chat.shutup.domain.repository.TripLocationRepository
-import com.chat.shutup.domain.repository.TripRepository
-import com.chat.shutup.domain.model.Trip
-import com.chat.shutup.domain.model.TripMarkerType
-import com.chat.shutup.domain.util.RouteProgressCalculator
+import com.chat.shutup.feature.auth.domain.repository.AuthRepository
+import com.chat.shutup.core.location.LocationClient
+import com.chat.shutup.feature.trip.domain.repository.RouteRepository
+import com.chat.shutup.feature.trip.domain.repository.TrackingRepository
+import com.chat.shutup.feature.trip.domain.repository.TrackingStatus
+import com.chat.shutup.feature.trip.domain.repository.TripLocationRepository
+import com.chat.shutup.feature.trip.domain.repository.TripRepository
+import com.chat.shutup.feature.trip.domain.model.Trip
+import com.chat.shutup.feature.trip.domain.model.TripMarkerType
+import com.chat.shutup.feature.trip.domain.util.RouteProgressCalculator
 import com.chat.shutup.feature.trip.data.service.TripLocationForegroundService
 import com.chat.shutup.feature.trip.presentation.util.VehicleSpriteProvider
 import com.chat.shutup.feature.trip.presentation.state.MemberLocationState
 import com.chat.shutup.feature.trip.presentation.state.RouteRequestState
 import com.chat.shutup.feature.trip.presentation.state.TripMapUiState
-import com.chat.shutup.domain.repository.TripChatRepository
-import com.chat.shutup.domain.repository.TripPreferencesRepository
+import com.chat.shutup.feature.chat.domain.repository.TripChatRepository
+import com.chat.shutup.feature.trip.domain.repository.TripPreferencesRepository
 import com.chat.shutup.feature.chat.domain.model.Message
 import com.chat.shutup.feature.chat.domain.model.MessageStatus
 import com.chat.shutup.feature.chat.domain.model.MessageType
-import com.chat.shutup.ui.navigation.Screen
+import com.chat.shutup.core.navigation.Screen
+import com.chat.shutup.feature.trip.domain.model.RoutePoint
+import com.chat.shutup.feature.trip.domain.model.TripNotificationData
+import com.chat.shutup.feature.trip.domain.model.TripNotificationType
 import com.google.android.gms.maps.model.LatLng
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
@@ -300,7 +303,7 @@ class TripMapViewModel @AssistedInject constructor(
         }.launchIn(viewModelScope)
     }
 
-    private fun findClosestPointIndex(progressMeters: Double, points: List<com.chat.shutup.domain.model.RoutePoint>): Int {
+    private fun findClosestPointIndex(progressMeters: Double, points: List<RoutePoint>): Int {
         var cumulative = 0.0
         for (i in 0 until points.size - 1) {
             val p1 = points[i]
@@ -345,16 +348,16 @@ class TripMapViewModel @AssistedInject constructor(
         viewModelScope.launch {
             tripRepository.pushTripEvent(
                 tripId,
-                com.chat.shutup.domain.model.TripNotificationData(
-                    type = if (isOffRoute) com.chat.shutup.domain.model.TripNotificationType.MEMBER_OFF_ROUTE 
-                           else com.chat.shutup.domain.model.TripNotificationType.MEMBER_BACK_ON_ROUTE,
+                TripNotificationData(
+                    type = if (isOffRoute) TripNotificationType.MEMBER_OFF_ROUTE
+                    else TripNotificationType.MEMBER_BACK_ON_ROUTE,
                     tripId = tripId,
                     tripName = "",
                     actorUserId = state.member.userId,
                     actorName = state.member.name,
                     title = if (isOffRoute) "Off Route" else "Back on Route",
-                    body = if (isOffRoute) "${state.member.name} is off the planned route" 
-                           else "${state.member.name} is back on the planned route"
+                    body = if (isOffRoute) "${state.member.name} is off the planned route"
+                    else "${state.member.name} is back on the planned route"
                 )
             )
         }

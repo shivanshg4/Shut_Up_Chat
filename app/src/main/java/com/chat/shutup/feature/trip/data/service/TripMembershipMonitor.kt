@@ -1,7 +1,8 @@
 package com.chat.shutup.feature.trip.data.service
 
-import com.chat.shutup.domain.repository.AuthRepository
-import com.chat.shutup.domain.repository.TripRepository
+import com.chat.shutup.feature.auth.domain.repository.AuthRepository
+import com.chat.shutup.feature.trip.domain.repository.TripRepository
+import com.chat.shutup.core.notifications.TripNotificationManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job

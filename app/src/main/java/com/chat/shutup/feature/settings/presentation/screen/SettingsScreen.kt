@@ -22,8 +22,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.AsyncImage
-import com.chat.shutup.domain.model.TripMarkerType
-import com.chat.shutup.domain.repository.AppThemeMode
+import com.chat.shutup.feature.trip.domain.model.TripMarkerType
+import com.chat.shutup.feature.trip.domain.repository.AppThemeMode
 import com.chat.shutup.feature.settings.presentation.viewmodel.SettingsViewModel
 import com.chat.shutup.feature.trip.presentation.util.TripMarkerAssetProvider
 

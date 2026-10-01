@@ -2,13 +2,13 @@ package com.chat.shutup.feature.settings.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.chat.shutup.domain.model.TripMarkerType
-import com.chat.shutup.domain.model.User
-import com.chat.shutup.domain.repository.AppThemeMode
-import com.chat.shutup.domain.repository.AuthRepository
-import com.chat.shutup.domain.repository.ChatRepository
-import com.chat.shutup.domain.repository.TripPreferencesRepository
-import com.chat.shutup.domain.repository.TripRepository
+import com.chat.shutup.feature.trip.domain.model.TripMarkerType
+import com.chat.shutup.feature.auth.domain.model.User
+import com.chat.shutup.feature.trip.domain.repository.AppThemeMode
+import com.chat.shutup.feature.auth.domain.repository.AuthRepository
+import com.chat.shutup.feature.chat.domain.repository.ChatRepository
+import com.chat.shutup.feature.trip.domain.repository.TripPreferencesRepository
+import com.chat.shutup.feature.trip.domain.repository.TripRepository
 import com.chat.shutup.feature.settings.presentation.state.SettingsUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow

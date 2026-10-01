@@ -24,10 +24,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.chat.shutup.domain.repository.TrackingStatus
+import com.chat.shutup.feature.trip.domain.repository.TrackingStatus
 import com.chat.shutup.feature.trip.presentation.state.TripMapUiState
-import com.chat.shutup.ui.components.chat.MessageBubble
-import com.chat.shutup.ui.components.chat.MessageComposer
+import com.chat.shutup.core.designsystem.components.chat.MessageBubble
+import com.chat.shutup.core.designsystem.components.chat.MessageComposer
 import java.util.*
 
 @Composable

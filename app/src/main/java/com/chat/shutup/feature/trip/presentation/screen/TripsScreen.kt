@@ -32,7 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.AsyncImage
-import com.chat.shutup.domain.model.Trip
+import com.chat.shutup.feature.trip.domain.model.Trip
 import com.chat.shutup.feature.trip.presentation.screen.components.HomeEnvironment
 import com.chat.shutup.feature.trip.presentation.util.ShakeDetector
 import com.chat.shutup.feature.trip.presentation.viewmodel.TripsViewModel
@@ -205,7 +205,7 @@ fun TripsScreen(
                 JoinTripDashedCard(onJoinTripClick)
             }
 
-            // Recent Activity Section
+           /* // Recent Activity Section
             item {
                 RecentActivityHeader()
             }
@@ -217,7 +217,7 @@ fun TripsScreen(
                     time = "2 min ago",
                     icon = Icons.Default.Wifi
                 )
-            }
+            }*/
         }
 
         if (uiState.isLoading) {

@@ -6,11 +6,11 @@ import android.os.Build
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.chat.shutup.domain.repository.AuthRepository
-import com.chat.shutup.domain.repository.TrackingRepository
-import com.chat.shutup.domain.repository.TrackingStatus
-import com.chat.shutup.domain.repository.TripRepository
-import com.chat.shutup.domain.usecase.LeaveTripUseCase
+import com.chat.shutup.feature.auth.domain.repository.AuthRepository
+import com.chat.shutup.feature.trip.domain.repository.TrackingRepository
+import com.chat.shutup.feature.trip.domain.repository.TrackingStatus
+import com.chat.shutup.feature.trip.domain.repository.TripRepository
+import com.chat.shutup.feature.trip.domain.usecase.LeaveTripUseCase
 import com.chat.shutup.feature.trip.data.service.TripLocationForegroundService
 import com.chat.shutup.feature.trip.presentation.state.TripDetailsUiState
 import dagger.hilt.android.lifecycle.HiltViewModel

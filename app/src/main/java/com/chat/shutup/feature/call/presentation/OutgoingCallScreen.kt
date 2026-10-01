@@ -11,8 +11,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.chat.shutup.domain.model.CallInfo
-import com.chat.shutup.ui.components.Avatar
+import com.chat.shutup.feature.call.domain.model.CallInfo
+import com.chat.shutup.core.designsystem.components.Avatar
 
 @Composable
 fun OutgoingCallScreen(

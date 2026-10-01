@@ -2,10 +2,10 @@ package com.chat.shutup.feature.trip.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.chat.shutup.domain.repository.AuthRepository
-import com.chat.shutup.domain.repository.TripRepository
-import com.chat.shutup.domain.usecase.AlreadyMemberException
-import com.chat.shutup.domain.usecase.JoinTripUseCase
+import com.chat.shutup.feature.auth.domain.repository.AuthRepository
+import com.chat.shutup.feature.trip.domain.repository.TripRepository
+import com.chat.shutup.feature.trip.domain.usecase.AlreadyMemberException
+import com.chat.shutup.feature.trip.domain.usecase.JoinTripUseCase
 import com.chat.shutup.feature.trip.presentation.state.JoinTripUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow

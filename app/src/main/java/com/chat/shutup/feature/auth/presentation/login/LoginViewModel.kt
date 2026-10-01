@@ -8,9 +8,9 @@ import androidx.credentials.GetCredentialResponse
 import androidx.credentials.exceptions.GetCredentialException
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.chat.shutup.domain.model.User
-import com.chat.shutup.domain.repository.AuthRepository
-import com.chat.shutup.domain.repository.ChatRepository
+import com.chat.shutup.feature.auth.domain.model.User
+import com.chat.shutup.feature.auth.domain.repository.AuthRepository
+import com.chat.shutup.feature.chat.domain.repository.ChatRepository
 import com.chat.shutup.feature.auth.manager.AuthManager
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
@@ -181,7 +181,7 @@ class LoginViewModel @Inject constructor(
 }
 
 data class LoginUiState(
-    val isLoading: Boolean = false,
+    val isLoading: Boolean = true,
     val isSuccess: Boolean = false,
     val error: String? = null
 )

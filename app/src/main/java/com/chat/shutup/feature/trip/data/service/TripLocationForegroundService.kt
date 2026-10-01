@@ -7,12 +7,15 @@ import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.ServiceCompat
-import com.chat.shutup.domain.repository.AuthRepository
-import com.chat.shutup.domain.repository.LocationClient
-import com.chat.shutup.domain.repository.TrackingRepository
-import com.chat.shutup.domain.repository.TrackingStatus
-import com.chat.shutup.domain.repository.TripLocationRepository
-import com.chat.shutup.domain.repository.TripRepository
+import com.chat.shutup.feature.auth.domain.repository.AuthRepository
+import com.chat.shutup.core.location.LocationClient
+import com.chat.shutup.feature.trip.domain.repository.TrackingRepository
+import com.chat.shutup.feature.trip.domain.repository.TrackingStatus
+import com.chat.shutup.feature.trip.domain.repository.TripLocationRepository
+import com.chat.shutup.feature.trip.domain.repository.TripRepository
+import com.chat.shutup.core.notifications.TripNotificationManager
+import com.chat.shutup.feature.trip.domain.model.TripNotificationData
+import com.chat.shutup.feature.trip.domain.model.TripNotificationType
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -139,8 +142,8 @@ class TripLocationForegroundService : Service() {
         serviceScope.launch {
             tripRepository.pushTripEvent(
                 tripId,
-                com.chat.shutup.domain.model.TripNotificationData(
-                    type = com.chat.shutup.domain.model.TripNotificationType.LOCATION_SHARING_STARTED,
+                TripNotificationData(
+                    type = TripNotificationType.LOCATION_SHARING_STARTED,
                     tripId = tripId,
                     tripName = "",
                     actorUserId = userId,
@@ -163,8 +166,8 @@ class TripLocationForegroundService : Service() {
                 
                 tripRepository.pushTripEvent(
                     tripId,
-                    com.chat.shutup.domain.model.TripNotificationData(
-                        type = com.chat.shutup.domain.model.TripNotificationType.LOCATION_SHARING_STOPPED,
+                    TripNotificationData(
+                        type = TripNotificationType.LOCATION_SHARING_STOPPED,
                         tripId = tripId,
                         tripName = "",
                         actorUserId = userId,

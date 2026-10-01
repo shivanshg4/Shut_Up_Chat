@@ -74,7 +74,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.chat.shutup.R
-import com.chat.shutup.domain.model.TripMarkerType
+import com.chat.shutup.feature.trip.domain.model.TripMarkerType
+import com.chat.shutup.feature.trip.domain.model.Trip
+import com.chat.shutup.feature.trip.domain.repository.TrackingStatus
 import com.chat.shutup.feature.trip.presentation.screen.components.ShareTripBottomSheet
 import com.chat.shutup.feature.trip.presentation.screen.components.TripChatBottomSheet
 import com.chat.shutup.feature.trip.presentation.util.TripMarkerAssetProvider
@@ -422,7 +424,7 @@ fun TripMapScreen(
                 onDetailsClick = { uiState.trip?.id?.let(onNavigateToDetails) },
                 onShareClick = { showShareSheet = true },
                 onMarkerPickerClick = { showMarkerPicker = true },
-                isLive = uiState.trackingStatus == com.chat.shutup.domain.repository.TrackingStatus.TRACKING
+                isLive = uiState.trackingStatus == TrackingStatus.TRACKING
             )
 
             // Right side compact controls
@@ -519,7 +521,7 @@ fun TripMapScreen(
 
 @Composable
 fun TripMapHeader(
-    trip: com.chat.shutup.domain.model.Trip?,
+    trip: Trip?,
     membersCount: Int,
     onBackClick: () -> Unit,
     onDetailsClick: () -> Unit,
